@@ -15,7 +15,7 @@ users and hide themselves when there is nothing further to scroll to.
     <i class="bi bi-chevron-left"></i>
   </button>
 
-  <div class="rail" id="rail-{{ rail_id }}" data-rail>
+  <div class="rail reveal-stagger" id="rail-{{ rail_id }}" data-rail>
     {% for product in products %}
       {% include "partials/product_card.html" %}
     {% endfor %}

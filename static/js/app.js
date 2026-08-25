@@ -236,8 +236,11 @@
       rail.addEventListener("scroll", refresh, { passive: true });
       window.addEventListener("resize", refresh);
 
-      // Images load lazily and change scrollWidth, so measure again after.
+      // scrollWidth moves twice after first paint: lazy images resolve, and
+      // the staggered entrance transform settles. Measure again after both.
       window.setTimeout(refresh, 250);
+      window.setTimeout(refresh, 1400);
+      rail.addEventListener("transitionend", refresh);
       refresh();
     });
   })();
