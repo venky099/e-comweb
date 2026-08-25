@@ -202,6 +202,79 @@
     }
   });
 
+  // ---- Cart drawer -------------------------------------------------------
+  // After an HTMX add-to-cart the server returns a marker element; that opens
+  // the drawer and tells it to reload its contents.
+  (function () {
+    var drawerEl = document.getElementById("cartDrawer");
+    if (!drawerEl || !window.bootstrap) return;
+
+    var drawer = bootstrap.Offcanvas.getOrCreateInstance(drawerEl);
+
+    document.body.addEventListener("htmx:afterSwap", function () {
+      var marker = document.querySelector("[data-open-cart-drawer]");
+      if (!marker) return;
+      marker.remove();
+
+      // Reloads #cart-drawer-body, which listens for this event.
+      document.body.dispatchEvent(new CustomEvent("cart-changed"));
+      drawer.show();
+    });
+
+    // Mirror the header count onto the mobile bar, so the two never disagree.
+    var header = document.getElementById("cart-count");
+    if (header && window.MutationObserver) {
+      new MutationObserver(function () {
+        var count = header.textContent.trim();
+        document.querySelectorAll("[data-cart-count]").forEach(function (el) {
+          el.textContent = count;
+          el.classList.toggle("d-none", !count || count === "0");
+        });
+      }).observe(header, { childList: true, characterData: true, subtree: true });
+    }
+  })();
+
+  // ---- Theme toggle ------------------------------------------------------
+  // The initial theme is resolved by the inline script in <head>; this only
+  // handles switching and remembering the choice.
+  (function () {
+    var root = document.documentElement;
+    var toggles = document.querySelectorAll("[data-theme-toggle]");
+    if (!toggles.length) return;
+
+    function paintIcons() {
+      var dark = root.getAttribute("data-bs-theme") === "dark";
+      document.querySelectorAll("[data-theme-icon-light]").forEach(function (el) {
+        el.classList.toggle("d-none", dark);
+      });
+      document.querySelectorAll("[data-theme-icon-dark]").forEach(function (el) {
+        el.classList.toggle("d-none", !dark);
+      });
+    }
+
+    toggles.forEach(function (button) {
+      button.addEventListener("click", function () {
+        var next = root.getAttribute("data-bs-theme") === "dark" ? "light" : "dark";
+        root.setAttribute("data-bs-theme", next);
+        try { localStorage.setItem("theme", next); } catch (e) { /* private mode */ }
+        paintIcons();
+      });
+    });
+
+    // Follow the OS only while the visitor has not chosen for themselves.
+    if (window.matchMedia) {
+      window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", function (event) {
+        var chosen = null;
+        try { chosen = localStorage.getItem("theme"); } catch (e) { /* ignore */ }
+        if (chosen) return;
+        root.setAttribute("data-bs-theme", event.matches ? "dark" : "light");
+        paintIcons();
+      });
+    }
+
+    paintIcons();
+  })();
+
   // ---- Scroll reveal -----------------------------------------------------
   // Reveals each element once, then stops observing it. Uses
   // IntersectionObserver rather than a scroll listener so nothing runs on the

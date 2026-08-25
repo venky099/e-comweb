@@ -1,0 +1,21 @@
+{% comment %}
+Slide-out cart. Contents are loaded on demand from cart:mini, so the markup
+costs nothing on pages the shopper never opens it from.
+{% endcomment %}
+<div class="offcanvas offcanvas-end cart-drawer" tabindex="-1" id="cartDrawer"
+     aria-labelledby="cartDrawerLabel">
+  <div class="offcanvas-header">
+    <h2 class="offcanvas-title h6 mb-0" id="cartDrawerLabel">
+      <i class="bi bi-bag me-2"></i>Your cart
+    </h2>
+    <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+  </div>
+
+  <div class="offcanvas-body" id="cart-drawer-body"
+       hx-get="{% url 'cart:mini' %}" hx-trigger="load, cart-changed from:body">
+    <div class="p-4 text-center text-body-secondary small">
+      <div class="spinner-border spinner-border-sm" role="status"></div>
+      <div class="mt-2">Loading your cart...</div>
+    </div>
+  </div>
+</div>

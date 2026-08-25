@@ -1,11 +1,11 @@
-{% comment %}Returned after an HTMX add-to-cart: updates the header badge.{% endcomment %}
+{% comment %}
+Returned after an HTMX add-to-cart. Updates every cart counter out-of-band
+(header and mobile bar), then fires `cart-changed` so the drawer reloads and
+opens itself.
+{% endcomment %}
 <span id="cart-count" class="badge rounded-pill bg-primary nav-badge {% if not cart.item_count %}d-none{% endif %}"
       hx-swap-oob="true">{{ cart.item_count }}</span>
+
 {% if added %}
-  <div class="toast align-items-center text-bg-success border-0 show position-fixed bottom-0 end-0 m-3" role="alert" style="z-index:1090">
-    <div class="d-flex">
-      <div class="toast-body"><i class="bi bi-check-circle me-1"></i>Added to your cart</div>
-      <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
-    </div>
-  </div>
+  <span data-open-cart-drawer hidden></span>
 {% endif %}

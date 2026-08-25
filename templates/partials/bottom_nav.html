@@ -1,0 +1,34 @@
+{% comment %}
+Mobile-only bottom tab bar. Thumb-reachable navigation for the four things
+shoppers actually do; hidden at >=768px where the header covers it.
+{% endcomment %}
+<nav class="bottom-nav" aria-label="Primary">
+  <a href="{% url 'core:home' %}"
+     class="{% if request.resolver_match.view_name == 'core:home' %}is-active{% endif %}">
+    <i class="bi bi-house{% if request.resolver_match.view_name == 'core:home' %}-fill{% endif %}"></i>
+    <span>Home</span>
+  </a>
+
+  <a href="{% url 'catalog:product_list' %}"
+     class="{% if 'catalog' in request.resolver_match.namespace %}is-active{% endif %}">
+    <i class="bi bi-search"></i>
+    <span>Shop</span>
+  </a>
+
+  <a href="{% url 'wishlist:detail' %}" class="position-relative
+     {% if 'wishlist' in request.resolver_match.namespace %}is-active{% endif %}">
+    <i class="bi bi-heart{% if 'wishlist' in request.resolver_match.namespace %}-fill{% endif %}"></i>
+    <span>Saved</span>
+    {% if header_wishlist_count %}
+      <span class="badge rounded-pill bg-danger nav-badge">{{ header_wishlist_count }}</span>
+    {% endif %}
+  </a>
+
+  <a href="{% url 'cart:detail' %}" class="position-relative
+     {% if 'cart' in request.resolver_match.namespace %}is-active{% endif %}">
+    <i class="bi bi-bag{% if 'cart' in request.resolver_match.namespace %}-fill{% endif %}"></i>
+    <span>Cart</span>
+    <span class="badge rounded-pill bg-primary nav-badge {% if not header_cart_count %}d-none{% endif %}"
+          data-cart-count>{{ header_cart_count }}</span>
+  </a>
+</nav>

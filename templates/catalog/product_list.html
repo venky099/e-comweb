@@ -187,10 +187,20 @@
       <div class="toolbar">
         <div class="d-flex flex-wrap gap-2 align-items-center">
           {% if active_filters %}
-            <span class="small text-body-secondary">Filtering by:</span>
+            <span class="small text-body-secondary d-flex align-items-center gap-2">
+              <span class="filter-count">{{ active_filters|length }}</span>
+              filter{{ active_filters|length|pluralize }} applied
+            </span>
             {% for field, label, value in active_filters %}
-              <span class="filter-chip">{{ label }}: {{ value }}</span>
+              {# Each chip links to the same search minus its own parameter. #}
+              <a class="filter-chip" href="?{% for k, v in request.GET.items %}{% if k != field and k != 'page' %}{{ k }}={{ v|urlencode }}&amp;{% endif %}{% endfor %}"
+                 title="Remove this filter">
+                {{ label }}: {{ value }} <i class="bi bi-x-lg"></i>
+              </a>
             {% endfor %}
+            <a class="filter-chip is-clear" href="{{ request.path }}{% if search_term %}?q={{ search_term|urlencode }}{% endif %}">
+              Clear all
+            </a>
           {% else %}
             <span class="small text-body-secondary">Showing all {{ result_count }} product{{ result_count|pluralize }}</span>
           {% endif %}
@@ -207,6 +217,12 @@
             {% endfor %}
           </select>
         </form>
+      </div>
+
+      <div class="skeleton-grid grid-loading" aria-hidden="true">
+        {% for _ in "123456789012" %}
+          <div class="skeleton skeleton-card"></div>
+        {% endfor %}
       </div>
 
       {% include "catalog/partials/product_grid.html" %}
