@@ -1,0 +1,460 @@
+{% extends "base.html" %}
+{% load humanize %}
+
+{% block title %}Staff dashboard &mdash; {{ SITE_NAME }}{% endblock %}
+
+{% block content %}
+<div class="container-xxl">
+
+  <div class="page-head d-flex flex-wrap justify-content-between align-items-end gap-2">
+    <div>
+      <h1>Store dashboard</h1>
+      <p>Live figures as of {{ stats.generated_at|date:"d M Y, H:i" }}</p>
+    </div>
+    <div class="d-flex flex-wrap gap-2">
+      <select class="form-select form-select-sm w-auto" id="range-select">
+        <option value="7" {% if days == 7 %}selected{% endif %}>Last 7 days</option>
+        <option value="30" {% if days == 30 %}selected{% endif %}>Last 30 days</option>
+        <option value="90" {% if days == 90 %}selected{% endif %}>Last 90 days</option>
+        <option value="365" {% if days == 365 %}selected{% endif %}>Last 12 months</option>
+      </select>
+      <a href="{% url 'dashboard:reports' %}" class="btn btn-sm btn-outline-primary">
+        <i class="bi bi-file-earmark-spreadsheet me-1"></i>Reports
+      </a>
+      <a href="/admin/" class="btn btn-sm btn-outline-secondary">
+        <i class="bi bi-gear me-1"></i>Django admin
+      </a>
+    </div>
+  </div>
+
+  {# ---------------- KPI tiles ---------------- #}
+  <div class="row g-3 mb-4">
+    <div class="col-6 col-lg-3">
+      <div class="stat-card accent-brand">
+        <p class="stat-label">Total sales</p>
+        <p class="stat-value">{{ CURRENCY_SYMBOL }}{{ stats.total_sales|floatformat:0|intcomma }}</p>
+        <p class="stat-sub">Today {{ CURRENCY_SYMBOL }}{{ stats.today_sales|floatformat:0|intcomma }}</p>
+      </div>
+    </div>
+    <div class="col-6 col-lg-3">
+      <div class="stat-card accent-success">
+        <p class="stat-label">This month</p>
+        <p class="stat-value">{{ CURRENCY_SYMBOL }}{{ stats.month_sales|floatformat:0|intcomma }}</p>
+        <p class="stat-sub">Avg order {{ CURRENCY_SYMBOL }}{{ stats.average_order_value|floatformat:0|intcomma }}</p>
+      </div>
+    </div>
+    <div class="col-6 col-lg-3">
+      <div class="stat-card">
+        <p class="stat-label">Orders</p>
+        <p class="stat-value">{{ stats.total_orders|intcomma }}</p>
+        <p class="stat-sub">{{ stats.today_orders }} today</p>
+      </div>
+    </div>
+    <div class="col-6 col-lg-3">
+      <div class="stat-card">
+        <p class="stat-label">Customers</p>
+        <p class="stat-value">{{ stats.total_customers|intcomma }}</p>
+        <p class="stat-sub">{{ stats.new_this_month }} new this month</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="row g-3 mb-4">
+    <div class="col-6 col-md-4 col-lg-2">
+      <div class="stat-card accent-warning">
+        <p class="stat-label">Pending</p>
+        <p class="stat-value">{{ stats.pending }}</p>
+        <p class="stat-sub">awaiting confirmation</p>
+      </div>
+    </div>
+    <div class="col-6 col-md-4 col-lg-2">
+      <div class="stat-card">
+        <p class="stat-label">Processing</p>
+        <p class="stat-value">{{ stats.processing }}</p>
+        <p class="stat-sub">{{ stats.shipped }} shipped</p>
+      </div>
+    </div>
+    <div class="col-6 col-md-4 col-lg-2">
+      <div class="stat-card accent-success">
+        <p class="stat-label">Delivered</p>
+        <p class="stat-value">{{ stats.delivered }}</p>
+        <p class="stat-sub">completed</p>
+      </div>
+    </div>
+    <div class="col-6 col-md-4 col-lg-2">
+      <div class="stat-card accent-danger">
+        <p class="stat-label">Cancelled</p>
+        <p class="stat-value">{{ stats.cancelled }}</p>
+        <p class="stat-sub">{{ stats.returned }} returned</p>
+      </div>
+    </div>
+    <div class="col-6 col-md-4 col-lg-2">
+      <div class="stat-card accent-danger">
+        <p class="stat-label">Out of stock</p>
+        <p class="stat-value">{{ stats.out_of_stock }}</p>
+        <p class="stat-sub">{{ stats.low_stock }} low stock</p>
+      </div>
+    </div>
+    <div class="col-6 col-md-4 col-lg-2">
+      <div class="stat-card accent-warning">
+        <p class="stat-label">Open returns</p>
+        <p class="stat-value">{{ stats.returns_pending }}</p>
+        <p class="stat-sub">{{ CURRENCY_SYMBOL }}{{ stats.refunded_total|floatformat:0|intcomma }} refunded</p>
+      </div>
+    </div>
+  </div>
+
+  {# ---------------- charts ---------------- #}
+  <div class="row g-3 mb-4">
+    <div class="col-lg-8">
+      <div class="panel">
+        <div class="panel-head">
+          <h3>Revenue &amp; orders</h3>
+          <span class="small text-body-secondary" id="range-label">Last {{ days }} days</span>
+        </div>
+        <div class="panel-body"><div class="chart-holder"><canvas id="revenueChart"></canvas></div></div>
+      </div>
+    </div>
+    <div class="col-lg-4">
+      <div class="panel">
+        <div class="panel-head"><h3>Orders by status</h3></div>
+        <div class="panel-body"><div class="chart-holder"><canvas id="statusChart"></canvas></div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="row g-3 mb-4">
+    <div class="col-lg-4">
+      <div class="panel">
+        <div class="panel-head"><h3>New customers</h3></div>
+        <div class="panel-body"><div class="chart-holder"><canvas id="customerChart"></canvas></div></div>
+      </div>
+    </div>
+    <div class="col-lg-4">
+      <div class="panel">
+        <div class="panel-head"><h3>Category performance</h3></div>
+        <div class="panel-body"><div class="chart-holder"><canvas id="categoryChart"></canvas></div></div>
+      </div>
+    </div>
+    <div class="col-lg-4">
+      <div class="panel">
+        <div class="panel-head"><h3>Payment methods</h3></div>
+        <div class="panel-body"><div class="chart-holder"><canvas id="paymentChart"></canvas></div></div>
+      </div>
+    </div>
+  </div>
+
+  {# ---------------- revenue breakdown ---------------- #}
+  <div class="row g-3 mb-4">
+    <div class="col-lg-4">
+      <div class="panel">
+        <div class="panel-head">
+          <h3>Revenue breakdown</h3>
+          <a href="{% url 'dashboard:export' 'revenue' %}" class="small text-decoration-none">
+            <i class="bi bi-download"></i> CSV
+          </a>
+        </div>
+        <div class="panel-body">
+          <div class="summary-row"><span>Gross sales</span><span>{{ CURRENCY_SYMBOL }}{{ revenue_report.gross|floatformat:2|intcomma }}</span></div>
+          <div class="summary-row"><span>Product discounts</span><span class="text-danger">&minus; {{ CURRENCY_SYMBOL }}{{ revenue_report.product_discounts|floatformat:2|intcomma }}</span></div>
+          <div class="summary-row"><span>Coupon discounts</span><span class="text-danger">&minus; {{ CURRENCY_SYMBOL }}{{ revenue_report.coupon_discounts|floatformat:2|intcomma }}</span></div>
+          <div class="summary-row"><span>Delivery collected</span><span>{{ CURRENCY_SYMBOL }}{{ revenue_report.delivery|floatformat:2|intcomma }}</span></div>
+          <div class="summary-row"><span>Tax</span><span>{{ CURRENCY_SYMBOL }}{{ revenue_report.tax|floatformat:2|intcomma }}</span></div>
+          <div class="summary-row"><span>Refunds</span><span class="text-danger">&minus; {{ CURRENCY_SYMBOL }}{{ revenue_report.refunds|floatformat:2|intcomma }}</span></div>
+          <div class="summary-row total"><span>Net revenue</span><span>{{ CURRENCY_SYMBOL }}{{ revenue_report.net_after_refunds|floatformat:2|intcomma }}</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-lg-4">
+      <div class="panel">
+        <div class="panel-head">
+          <h3>Best sellers</h3>
+          <a href="{% url 'dashboard:export' 'product' %}?kind=best_sellers" class="small text-decoration-none">
+            <i class="bi bi-download"></i> CSV
+          </a>
+        </div>
+        <div class="panel-body p-0">
+          <div class="table-responsive">
+            <table class="table table-sm mb-0 align-middle">
+              <tbody>
+                {% for row in best_sellers %}
+                  <tr>
+                    <td class="small">{{ row.product__name|truncatechars:34 }}</td>
+                    <td class="small text-end text-body-secondary">{{ row.units_sold }} sold</td>
+                    <td class="small text-end fw-semibold">{{ CURRENCY_SYMBOL }}{{ row.revenue|floatformat:0|intcomma }}</td>
+                  </tr>
+                {% empty %}
+                  <tr><td class="small text-body-secondary p-3">No sales recorded yet.</td></tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-lg-4">
+      <div class="panel">
+        <div class="panel-head">
+          <h3>Low stock alerts</h3>
+          <a href="{% url 'dashboard:export' 'inventory' %}?kind=low" class="small text-decoration-none">
+            <i class="bi bi-download"></i> CSV
+          </a>
+        </div>
+        <div class="panel-body p-0">
+          <div class="table-responsive">
+            <table class="table table-sm mb-0 align-middle">
+              <tbody>
+                {% for row in low_stock %}
+                  <tr>
+                    <td class="small">{{ row.variant__product__name|truncatechars:30 }}</td>
+                    <td class="small text-body-secondary">{{ row.variant__sku }}</td>
+                    <td class="text-end">
+                      <span class="badge bg-warning text-dark">{{ row.quantity_available }} left</span>
+                    </td>
+                  </tr>
+                {% empty %}
+                  <tr><td class="small text-body-secondary p-3">Every variant is comfortably stocked.</td></tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  {# ---------------- activity ---------------- #}
+  <div class="row g-3">
+    <div class="col-lg-7">
+      <div class="panel">
+        <div class="panel-head">
+          <h3>Recent orders</h3>
+          <a href="/admin/orders/order/" class="small text-decoration-none">Manage in admin</a>
+        </div>
+        <div class="panel-body p-0">
+          <div class="table-responsive">
+            <table class="table table-sm mb-0 align-middle">
+              <thead class="table-light">
+                <tr><th>Order</th><th>Customer</th><th class="text-end">Total</th><th>Status</th><th>Placed</th></tr>
+              </thead>
+              <tbody>
+                {% for order in activity.orders %}
+                  <tr>
+                    <td class="small">
+                      <a href="/admin/orders/order/{{ order.pk }}/change/" class="text-decoration-none">
+                        {{ order.order_number }}
+                      </a>
+                    </td>
+                    <td class="small">{{ order.email|truncatechars:26 }}</td>
+                    <td class="small text-end fw-semibold">{{ CURRENCY_SYMBOL }}{{ order.total_amount|floatformat:2 }}</td>
+                    <td><span class="badge bg-{{ order.status_badge }}">{{ order.get_status_display }}</span></td>
+                    <td class="small text-body-secondary">{{ order.placed_at|date:"d M, H:i" }}</td>
+                  </tr>
+                {% empty %}
+                  <tr><td colspan="5" class="small text-body-secondary p-3">No orders yet.</td></tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-lg-5">
+      <div class="panel mb-3">
+        <div class="panel-head">
+          <h3>Top customers</h3>
+          <a href="{% url 'dashboard:export' 'customer' %}?kind=top" class="small text-decoration-none">
+            <i class="bi bi-download"></i> CSV
+          </a>
+        </div>
+        <div class="panel-body p-0">
+          <div class="table-responsive">
+            <table class="table table-sm mb-0 align-middle">
+              <tbody>
+                {% for row in top_customers %}
+                  <tr>
+                    <td class="small">{{ row.first_name|default:row.email|truncatechars:26 }}</td>
+                    <td class="small text-body-secondary text-end">{{ row.order_count }} orders</td>
+                    <td class="small text-end fw-semibold">{{ CURRENCY_SYMBOL }}{{ row.lifetime_value|floatformat:0|intcomma }}</td>
+                  </tr>
+                {% empty %}
+                  <tr><td class="small text-body-secondary p-3">No customer orders yet.</td></tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-head">
+          <h3>Pending returns</h3>
+          <a href="/admin/orders/returnrequest/" class="small text-decoration-none">Manage</a>
+        </div>
+        <div class="panel-body p-0">
+          <div class="table-responsive">
+            <table class="table table-sm mb-0 align-middle">
+              <tbody>
+                {% for return_request in activity.returns %}
+                  <tr>
+                    <td class="small">{{ return_request.order.order_number }}</td>
+                    <td class="small text-body-secondary">{{ return_request.order_item.product_name|truncatechars:24 }}</td>
+                    <td class="text-end">
+                      <span class="badge bg-{{ return_request.status_badge }}">{{ return_request.get_status_display }}</span>
+                    </td>
+                  </tr>
+                {% empty %}
+                  <tr><td class="small text-body-secondary p-3">No return requests.</td></tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+<script>
+(function () {
+  // All series come from the server's aggregate queries; the browser only draws.
+  var days = {{ days }};
+  var currency = "{{ CURRENCY_SYMBOL }}";
+  var palette = ["#4338ca", "#f97316", "#0ea5e9", "#16a34a", "#dc3545", "#a855f7", "#f59e0b", "#14b8a6"];
+  var charts = {};
+
+  Chart.defaults.font.family = '"Segoe UI", system-ui, sans-serif';
+  Chart.defaults.color = "#475569";
+
+  function fetchChart(name) {
+    return fetch("{% url 'dashboard:chart_data' 'PLACEHOLDER' %}".replace("PLACEHOLDER", name) + "?days=" + days)
+      .then(function (response) { return response.json(); });
+  }
+
+  function destroy(key) {
+    if (charts[key]) { charts[key].destroy(); }
+  }
+
+  function drawRevenue(data) {
+    destroy("revenue");
+    charts.revenue = new Chart(document.getElementById("revenueChart"), {
+      data: {
+        labels: data.labels,
+        datasets: [
+          {
+            type: "line", label: "Revenue", data: data.revenue,
+            borderColor: palette[0], backgroundColor: "rgba(67,56,202,.12)",
+            fill: true, tension: .35, yAxisID: "y", pointRadius: 0, borderWidth: 2
+          },
+          {
+            type: "bar", label: "Orders", data: data.orders,
+            backgroundColor: "rgba(249,115,22,.55)", yAxisID: "y1", borderRadius: 4
+          }
+        ]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        interaction: { mode: "index", intersect: false },
+        plugins: {
+          legend: { position: "bottom" },
+          tooltip: {
+            callbacks: {
+              label: function (ctx) {
+                if (ctx.dataset.label === "Revenue") {
+                  return "Revenue: " + currency + Number(ctx.parsed.y).toLocaleString();
+                }
+                return "Orders: " + ctx.parsed.y;
+              }
+            }
+          }
+        },
+        scales: {
+          y: {
+            position: "left", beginAtZero: true,
+            ticks: { callback: function (v) { return currency + v; } }
+          },
+          y1: {
+            position: "right", beginAtZero: true,
+            grid: { drawOnChartArea: false }, ticks: { precision: 0 }
+          }
+        }
+      }
+    });
+  }
+
+  function drawDoughnut(id, key, data, valuesKey) {
+    destroy(key);
+    charts[key] = new Chart(document.getElementById(id), {
+      type: "doughnut",
+      data: {
+        labels: data.labels,
+        datasets: [{ data: data[valuesKey], backgroundColor: palette, borderWidth: 0 }]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { position: "bottom", labels: { boxWidth: 12, font: { size: 11 } } } },
+        cutout: "58%"
+      }
+    });
+  }
+
+  function drawCustomers(data) {
+    destroy("customers");
+    charts.customers = new Chart(document.getElementById("customerChart"), {
+      type: "line",
+      data: {
+        labels: data.labels,
+        datasets: [{
+          label: "New customers", data: data.customers,
+          borderColor: palette[3], backgroundColor: "rgba(22,163,74,.14)",
+          fill: true, tension: .35, pointRadius: 0, borderWidth: 2
+        }]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        scales: { y: { beginAtZero: true, ticks: { precision: 0 } } }
+      }
+    });
+  }
+
+  function drawCategories(data) {
+    destroy("categories");
+    charts.categories = new Chart(document.getElementById("categoryChart"), {
+      type: "bar",
+      data: {
+        labels: data.labels,
+        datasets: [{ label: "Revenue", data: data.revenue, backgroundColor: palette[0], borderRadius: 4 }]
+      },
+      options: {
+        indexAxis: "y", responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        scales: { x: { beginAtZero: true, ticks: { callback: function (v) { return currency + v; } } } }
+      }
+    });
+  }
+
+  function loadAll() {
+    fetchChart("revenue").then(drawRevenue);
+    fetchChart("customers").then(drawCustomers);
+    fetchChart("order-status").then(function (d) { drawDoughnut("statusChart", "status", d, "data"); });
+    fetchChart("categories").then(drawCategories);
+    fetchChart("payment-methods").then(function (d) { drawDoughnut("paymentChart", "payment", d, "data"); });
+  }
+
+  document.getElementById("range-select").addEventListener("change", function (event) {
+    days = parseInt(event.target.value, 10);
+    document.getElementById("range-label").textContent = "Last " + days + " days";
+    loadAll();
+  });
+
+  loadAll();
+})();
+</script>
+{% endblock %}

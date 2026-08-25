@@ -1,0 +1,78 @@
+<footer class="site-footer mt-5 pt-5 pb-3">
+  <div class="container-xxl">
+    <div class="row g-4">
+
+      <div class="col-lg-4 col-md-6">
+        <h5 class="d-flex align-items-center gap-2 mb-3">
+          <span class="brand-mark">{{ SITE_NAME|slice:":1" }}</span>{{ SITE_NAME }}
+        </h5>
+        <p class="text-body-secondary small mb-3">{{ SITE_TAGLINE }}</p>
+        <ul class="list-unstyled small text-body-secondary mb-3">
+          <li><i class="bi bi-envelope me-2"></i><a href="mailto:{{ SUPPORT_EMAIL }}">{{ SUPPORT_EMAIL }}</a></li>
+          <li><i class="bi bi-telephone me-2"></i>{{ SUPPORT_PHONE }}</li>
+        </ul>
+        <div class="d-flex gap-2">
+          <a class="social-link" href="#" aria-label="Facebook"><i class="bi bi-facebook"></i></a>
+          <a class="social-link" href="#" aria-label="Instagram"><i class="bi bi-instagram"></i></a>
+          <a class="social-link" href="#" aria-label="X"><i class="bi bi-twitter-x"></i></a>
+          <a class="social-link" href="#" aria-label="YouTube"><i class="bi bi-youtube"></i></a>
+        </div>
+      </div>
+
+      <div class="col-lg-2 col-md-6 col-6">
+        <h6 class="footer-heading">Shop</h6>
+        <ul class="list-unstyled footer-links">
+          <li><a href="{% url 'catalog:product_list' %}">All products</a></li>
+          <li><a href="{% url 'catalog:product_list' %}?sort=newest">New arrivals</a></li>
+          <li><a href="{% url 'catalog:product_list' %}?sort=popularity">Best sellers</a></li>
+          <li><a href="{% url 'catalog:product_list' %}?availability=on_sale">Deals</a></li>
+          <li><a href="{% url 'catalog:brand_list' %}">Brands</a></li>
+        </ul>
+      </div>
+
+      <div class="col-lg-2 col-md-6 col-6">
+        <h6 class="footer-heading">Account</h6>
+        <ul class="list-unstyled footer-links">
+          {% if user.is_authenticated %}
+            <li><a href="{% url 'accounts:dashboard' %}">My account</a></li>
+            <li><a href="{% url 'orders:list' %}">My orders</a></li>
+            <li><a href="{% url 'orders:returns' %}">Returns</a></li>
+          {% else %}
+            <li><a href="{% url 'accounts:login' %}">Sign in</a></li>
+            <li><a href="{% url 'accounts:register' %}">Create account</a></li>
+          {% endif %}
+          <li><a href="{% url 'wishlist:detail' %}">Wishlist</a></li>
+          <li><a href="{% url 'cart:detail' %}">Cart</a></li>
+        </ul>
+      </div>
+
+      <div class="col-lg-2 col-md-6 col-6">
+        <h6 class="footer-heading">Help</h6>
+        <ul class="list-unstyled footer-links">
+          <li><a href="{% url 'core:contact' %}">Contact us</a></li>
+          <li><a href="{% url 'core:policy' 'shipping' %}">Shipping</a></li>
+          <li><a href="{% url 'core:policy' 'returns' %}">Returns &amp; refunds</a></li>
+          <li><a href="{% url 'core:about' %}">About us</a></li>
+        </ul>
+      </div>
+
+      <div class="col-lg-2 col-md-6 col-6">
+        <h6 class="footer-heading">Legal</h6>
+        <ul class="list-unstyled footer-links">
+          <li><a href="{% url 'core:policy' 'terms' %}">Terms &amp; conditions</a></li>
+          <li><a href="{% url 'core:policy' 'privacy' %}">Privacy policy</a></li>
+        </ul>
+      </div>
+    </div>
+
+    <hr class="my-4">
+
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-center gap-2 small text-body-secondary">
+      <span>&copy; {% now "Y" %} {{ SITE_NAME }}. All rights reserved.</span>
+      <span class="d-flex align-items-center gap-3">
+        <span><i class="bi bi-shield-check me-1"></i>Secure payments</span>
+        <span><i class="bi bi-arrow-counterclockwise me-1"></i>{{ RETURN_WINDOW_DAYS }}-day returns</span>
+      </span>
+    </div>
+  </div>
+</footer>

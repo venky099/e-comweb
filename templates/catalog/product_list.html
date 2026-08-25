@@ -1,0 +1,243 @@
+{% extends "base.html" %}
+
+{% block title %}
+  {% if category %}{{ category.name }}{% elif search_term %}{{ search_term }}{% else %}All products{% endif %} &mdash; {{ SITE_NAME }}
+{% endblock %}
+
+{% block breadcrumbs %}
+<div class="container-xxl pt-3">
+  <nav aria-label="breadcrumb">
+    <ol class="breadcrumb small mb-0">
+      <li class="breadcrumb-item"><a href="{% url 'core:home' %}">Home</a></li>
+      {% for crumb in breadcrumbs %}
+        <li class="breadcrumb-item"><a href="{% url 'catalog:category' crumb.slug %}">{{ crumb.name }}</a></li>
+      {% endfor %}
+      <li class="breadcrumb-item active" aria-current="page">
+        {% if category %}{{ category.name }}{% elif search_term %}Search{% else %}All products{% endif %}
+      </li>
+    </ol>
+  </nav>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="container-xxl">
+
+  <div class="page-head">
+    <h1>
+      {% if category %}{{ category.name }}
+      {% elif search_term %}Results for &ldquo;{{ search_term }}&rdquo;
+      {% else %}All products{% endif %}
+    </h1>
+    <p>{{ result_count }} product{{ result_count|pluralize }} found</p>
+    {% if category.description %}<p class="mt-2">{{ category.description }}</p>{% endif %}
+  </div>
+
+  {% if subcategories %}
+    <div class="d-flex flex-wrap gap-2 mb-3">
+      {% for sub in subcategories %}
+        <a href="{% url 'catalog:category' sub.slug %}" class="btn btn-sm btn-outline-secondary">{{ sub.name }}</a>
+      {% endfor %}
+    </div>
+  {% endif %}
+
+  <div class="row g-4">
+
+    {# ---------------- filters ---------------- #}
+    <div class="col-lg-3">
+      <button class="btn btn-outline-secondary w-100 d-lg-none mb-3" type="button"
+              data-bs-toggle="collapse" data-bs-target="#filterPanel">
+        <i class="bi bi-funnel me-1"></i>Filters &amp; sorting
+      </button>
+
+      <div class="collapse d-lg-block" id="filterPanel">
+        <form method="get" action="" class="filter-panel" id="filter-form">
+          {% if search_term %}<input type="hidden" name="q" value="{{ search_term }}">{% endif %}
+          <input type="hidden" name="sort" value="{{ sort_key }}">
+
+          <div class="d-flex justify-content-between align-items-center mb-2">
+            <h6 class="mb-0">Filters</h6>
+            <a href="{{ request.path }}{% if search_term %}?q={{ search_term|urlencode }}{% endif %}"
+               class="small text-decoration-none">Clear all</a>
+          </div>
+
+          {% if not category %}
+            <div class="filter-group">
+              <h6>Category</h6>
+              <div class="filter-scroll">
+                {% for cat in categories %}
+                  <div class="form-check">
+                    <input class="form-check-input" type="radio" name="category" value="{{ cat.slug }}"
+                           id="cat-{{ cat.slug }}" data-autosubmit
+                           {% if filter_form.cleaned_data.category == cat.slug %}checked{% endif %}>
+                    <label class="form-check-label small" for="cat-{{ cat.slug }}">{{ cat.name }}</label>
+                  </div>
+                {% endfor %}
+              </div>
+            </div>
+          {% endif %}
+
+          {% if facets.brands %}
+            <div class="filter-group">
+              <h6>Brand</h6>
+              <div class="filter-scroll">
+                {% for brand in facets.brands %}
+                  <div class="form-check">
+                    <input class="form-check-input" type="checkbox" name="brand_list" value="{{ brand.slug }}"
+                           id="brand-{{ brand.slug }}" data-brand-checkbox
+                           {% if brand.slug in filter_form.cleaned_data.brand %}checked{% endif %}>
+                    <label class="form-check-label small d-flex justify-content-between" for="brand-{{ brand.slug }}">
+                      <span>{{ brand.name }}</span>
+                      <span class="text-body-secondary">{{ brand.product_count }}</span>
+                    </label>
+                  </div>
+                {% endfor %}
+              </div>
+              <input type="hidden" name="brand" id="brand-value" value="{{ filter_form.cleaned_data.brand|default:'' }}">
+            </div>
+          {% endif %}
+
+          <div class="filter-group">
+            <h6>Price ({{ CURRENCY_SYMBOL }})</h6>
+            <div class="d-flex gap-2 align-items-center">
+              <input type="number" class="form-control form-control-sm" name="min_price" min="0" step="1"
+                     placeholder="{{ facets.price_min|floatformat:0 }}" value="{{ request.GET.min_price|default:'' }}"
+                     aria-label="Minimum price">
+              <span class="text-body-secondary">&ndash;</span>
+              <input type="number" class="form-control form-control-sm" name="max_price" min="0" step="1"
+                     placeholder="{{ facets.price_max|floatformat:0 }}" value="{{ request.GET.max_price|default:'' }}"
+                     aria-label="Maximum price">
+            </div>
+            <button class="btn btn-sm btn-outline-primary w-100 mt-2" type="submit">Apply price</button>
+          </div>
+
+          <div class="filter-group">
+            <h6>Customer rating</h6>
+            {% for stars in "4321" %}
+              <div class="form-check">
+                <input class="form-check-input" type="radio" name="rating" value="{{ stars }}"
+                       id="rating-{{ stars }}" data-autosubmit
+                       {% if filter_form.cleaned_data.rating|stringformat:"s" == stars %}checked{% endif %}>
+                <label class="form-check-label small" for="rating-{{ stars }}">
+                  <span class="rating-stars">
+                    {% for i in "12345" %}<i class="bi {% if forloop.counter <= stars|add:0 %}bi-star-fill{% else %}bi-star{% endif %}"></i>{% endfor %}
+                  </span>
+                  &amp; up
+                </label>
+              </div>
+            {% endfor %}
+          </div>
+
+          {% if facets.sizes %}
+            <div class="filter-group">
+              <h6>Size</h6>
+              <div class="d-flex flex-wrap gap-2">
+                {% for size in facets.sizes %}
+                  <label class="option-btn {% if size.size in filter_form.cleaned_data.size %}is-active{% endif %}">
+                    <input type="checkbox" class="d-none" name="size_list" value="{{ size.size }}"
+                           data-size-checkbox {% if size.size in filter_form.cleaned_data.size %}checked{% endif %}>
+                    {{ size.size }}
+                  </label>
+                {% endfor %}
+              </div>
+              <input type="hidden" name="size" id="size-value" value="{{ filter_form.cleaned_data.size|default:'' }}">
+            </div>
+          {% endif %}
+
+          {% if facets.colors %}
+            <div class="filter-group">
+              <h6>Colour</h6>
+              <div class="d-flex flex-wrap gap-2">
+                {% for color in facets.colors %}
+                  <label class="swatch {% if color.color in filter_form.cleaned_data.color %}is-active{% endif %}"
+                         style="background: {{ color.color_hex|default:'#cbd5e1' }}"
+                         title="{{ color.color }}">
+                    <input type="checkbox" class="d-none" name="color_list" value="{{ color.color }}"
+                           data-color-checkbox {% if color.color in filter_form.cleaned_data.color %}checked{% endif %}>
+                    <span class="visually-hidden">{{ color.color }}</span>
+                  </label>
+                {% endfor %}
+              </div>
+              <input type="hidden" name="color" id="color-value" value="{{ filter_form.cleaned_data.color|default:'' }}">
+            </div>
+          {% endif %}
+
+          <div class="filter-group">
+            <h6>Availability</h6>
+            <div class="form-check">
+              <input class="form-check-input" type="radio" name="availability" value="in_stock" id="avail-stock"
+                     data-autosubmit {% if filter_form.cleaned_data.availability == 'in_stock' %}checked{% endif %}>
+              <label class="form-check-label small" for="avail-stock">In stock only</label>
+            </div>
+            <div class="form-check">
+              <input class="form-check-input" type="radio" name="availability" value="on_sale" id="avail-sale"
+                     data-autosubmit {% if filter_form.cleaned_data.availability == 'on_sale' %}checked{% endif %}>
+              <label class="form-check-label small" for="avail-sale">On sale</label>
+            </div>
+          </div>
+
+          <button class="btn btn-primary w-100 mt-3" type="submit">Apply filters</button>
+        </form>
+      </div>
+    </div>
+
+    {# ---------------- results ---------------- #}
+    <div class="col-lg-9">
+
+      <div class="toolbar">
+        <div class="d-flex flex-wrap gap-2 align-items-center">
+          {% if active_filters %}
+            <span class="small text-body-secondary">Filtering by:</span>
+            {% for field, label, value in active_filters %}
+              <span class="filter-chip">{{ label }}: {{ value }}</span>
+            {% endfor %}
+          {% else %}
+            <span class="small text-body-secondary">Showing all {{ result_count }} product{{ result_count|pluralize }}</span>
+          {% endif %}
+        </div>
+
+        <form method="get" class="d-flex align-items-center gap-2" id="sort-form">
+          {% for key, value in request.GET.items %}
+            {% if key != "sort" and key != "page" %}<input type="hidden" name="{{ key }}" value="{{ value }}">{% endif %}
+          {% endfor %}
+          <label for="sort" class="small text-body-secondary mb-0">Sort by</label>
+          <select name="sort" id="sort" class="form-select form-select-sm w-auto" data-autosubmit>
+            {% for value, label in filter_form.fields.sort.choices %}
+              <option value="{{ value }}" {% if value == sort_key %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+          </select>
+        </form>
+      </div>
+
+      {% include "catalog/partials/product_grid.html" %}
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  // Multi-select facets post as comma-joined hidden fields so the querystring
+  // stays readable and bookmarkable (?brand=acme,globex).
+  (function () {
+    function wire(checkboxAttr, hiddenId) {
+      var boxes = document.querySelectorAll("[" + checkboxAttr + "]");
+      var hidden = document.getElementById(hiddenId);
+      if (!hidden || !boxes.length) return;
+      boxes.forEach(function (box) {
+        box.addEventListener("change", function () {
+          var selected = [];
+          boxes.forEach(function (b) { if (b.checked) selected.push(b.value); });
+          hidden.value = selected.join(",");
+          if (box.closest(".option-btn")) box.closest(".option-btn").classList.toggle("is-active", box.checked);
+          if (box.closest(".swatch")) box.closest(".swatch").classList.toggle("is-active", box.checked);
+          document.getElementById("filter-form").requestSubmit();
+        });
+      });
+    }
+    wire("data-brand-checkbox", "brand-value");
+    wire("data-size-checkbox", "size-value");
+    wire("data-color-checkbox", "color-value");
+  })();
+</script>
+{% endblock %}

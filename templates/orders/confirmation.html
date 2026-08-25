@@ -1,0 +1,116 @@
+{% extends "base.html" %}
+
+{% block title %}Order {{ order.order_number }} confirmed{% endblock %}
+
+{% block content %}
+<div class="container-xxl">
+
+  <div class="checkout-steps mt-4">
+    <div class="checkout-step is-done"><span class="step-num"><i class="bi bi-check"></i></span> Delivery address</div>
+    <div class="checkout-step is-done"><span class="step-num"><i class="bi bi-check"></i></span> Payment</div>
+    <div class="checkout-step is-active"><span class="step-num">3</span> Confirmation</div>
+  </div>
+
+  <div class="text-center py-4">
+    <div class="mb-3">
+      <span class="d-inline-grid place-items-center rounded-circle bg-success text-white"
+            style="width:72px;height:72px;display:grid;place-items:center;font-size:2rem">
+        <i class="bi bi-check-lg"></i>
+      </span>
+    </div>
+    <h1 class="h3 fw-bold">Thank you, {{ order.shipping_full_name|default:user.first_name }}!</h1>
+    <p class="text-body-secondary mb-1">Your order has been placed successfully.</p>
+    <p class="mb-0">
+      Order number: <strong>{{ order.order_number }}</strong>
+    </p>
+    {% if order.estimated_delivery %}
+      <p class="text-body-secondary">
+        Estimated delivery by <strong>{{ order.estimated_delivery|date:"D, d M Y" }}</strong>
+      </p>
+    {% endif %}
+  </div>
+
+  <div class="row g-4 justify-content-center">
+    <div class="col-lg-8">
+      <div class="bg-body border rounded-3 p-3 p-md-4">
+
+        <h2 class="h6 mb-3">Order summary</h2>
+        {% for item in order.items.all %}
+          <div class="d-flex gap-3 align-items-center py-2 border-bottom">
+            {% if item.image_url %}
+              <img src="{{ item.image_url }}" alt="" style="width:56px;height:56px;object-fit:cover;border-radius:8px">
+            {% else %}
+              <span class="placeholder-media" style="width:56px;height:56px;border-radius:8px"></span>
+            {% endif %}
+            <div class="flex-grow-1">
+              <div class="fw-semibold small">{{ item.product_name }}</div>
+              <div class="small text-body-secondary">
+                {% if item.variant_label %}{{ item.variant_label }} &middot; {% endif %}Qty {{ item.quantity }}
+              </div>
+            </div>
+            <div class="fw-semibold">{{ CURRENCY_SYMBOL }}{{ item.line_total|floatformat:2 }}</div>
+          </div>
+        {% endfor %}
+
+        <div class="mt-3">
+          <div class="summary-row"><span>Subtotal</span><span>{{ CURRENCY_SYMBOL }}{{ order.subtotal|floatformat:2 }}</span></div>
+          {% if order.coupon_discount %}
+            <div class="summary-row">
+              <span>Coupon {{ order.coupon_code }}</span>
+              <span class="text-success">&minus; {{ CURRENCY_SYMBOL }}{{ order.coupon_discount|floatformat:2 }}</span>
+            </div>
+          {% endif %}
+          <div class="summary-row">
+            <span>Delivery</span>
+            {% if order.delivery_charge %}
+              <span>{{ CURRENCY_SYMBOL }}{{ order.delivery_charge|floatformat:2 }}</span>
+            {% else %}<span class="text-success">FREE</span>{% endif %}
+          </div>
+          {% if order.tax_amount %}
+            <div class="summary-row"><span>Tax</span><span>{{ CURRENCY_SYMBOL }}{{ order.tax_amount|floatformat:2 }}</span></div>
+          {% endif %}
+          <div class="summary-row total">
+            <span>Total {% if order.is_cod %}payable on delivery{% endif %}</span>
+            <span>{{ CURRENCY_SYMBOL }}{{ order.total_amount|floatformat:2 }}</span>
+          </div>
+        </div>
+
+        <hr>
+
+        <div class="row g-3 small">
+          <div class="col-sm-6">
+            <h3 class="h6">Delivery address</h3>
+            <p class="mb-0 text-body-secondary">
+              {{ order.shipping_full_name }}<br>
+              {% for line in order.shipping_address_lines %}{{ line }}<br>{% endfor %}
+              <i class="bi bi-telephone me-1"></i>{{ order.shipping_phone }}
+            </p>
+          </div>
+          <div class="col-sm-6">
+            <h3 class="h6">Payment</h3>
+            <p class="mb-0 text-body-secondary">
+              {{ order.get_payment_method_display }}<br>
+              Status: <span class="badge bg-{{ order.status_badge }}-subtle text-{{ order.status_badge }}">
+                {{ order.get_payment_status_display }}
+              </span>
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div class="d-flex flex-wrap gap-2 mt-3">
+        <a href="{% url 'orders:detail' order.order_number %}" class="btn btn-primary">
+          <i class="bi bi-box-seam me-1"></i>Track this order
+        </a>
+        <a href="{% url 'orders:list' %}" class="btn btn-outline-secondary">All my orders</a>
+        <a href="{% url 'catalog:product_list' %}" class="btn btn-outline-secondary">Continue shopping</a>
+      </div>
+
+      <p class="small text-body-secondary mt-3">
+        A confirmation has been sent to <strong>{{ order.email }}</strong>.
+        You can cancel this order free of charge within {{ ORDER_CANCEL_WINDOW_HOURS }} hours, while it is unshipped.
+      </p>
+    </div>
+  </div>
+</div>
+{% endblock %}

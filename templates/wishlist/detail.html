@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+
+{% block title %}Your wishlist &mdash; {{ SITE_NAME }}{% endblock %}
+
+{% block content %}
+<div class="container-xxl">
+  <div class="page-head d-flex flex-wrap justify-content-between align-items-end gap-2">
+    <div>
+      <h1>Your wishlist</h1>
+      <p>{{ paginator.count|default:items|length }} saved item{{ items|length|pluralize }}</p>
+    </div>
+    {% if items %}
+      <div class="d-flex gap-2">
+        <form method="post" action="{% url 'wishlist:move_all_to_cart' %}">
+          {% csrf_token %}
+          <button class="btn btn-primary btn-sm" type="submit">
+            <i class="bi bi-bag-plus me-1"></i>Move all to cart
+          </button>
+        </form>
+        <form method="post" action="{% url 'wishlist:clear' %}"
+              onsubmit="return confirm('Remove every item from your wishlist?');">
+          {% csrf_token %}
+          <button class="btn btn-outline-danger btn-sm" type="submit">
+            <i class="bi bi-trash me-1"></i>Clear
+          </button>
+        </form>
+      </div>
+    {% endif %}
+  </div>
+
+  <div id="wishlist-container">
+    {% include "wishlist/partials/wishlist_body.html" %}
+  </div>
+
+  {% include "partials/pagination.html" %}
+</div>
+{% endblock %}

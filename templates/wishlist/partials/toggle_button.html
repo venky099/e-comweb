@@ -1,0 +1,10 @@
+{% comment %}Swapped in place by HTMX after toggling a wishlist item.{% endcomment %}
+<form method="post" action="{% url 'wishlist:toggle' %}" class="wishlist-toggle"
+      hx-post="{% url 'wishlist:toggle' %}" hx-swap="outerHTML" hx-target="this">
+  {% csrf_token %}
+  <input type="hidden" name="product_id" value="{{ product.pk }}">
+  <button class="btn btn-light btn-sm rounded-circle shadow-sm {% if in_wishlist %}is-saved{% endif %}"
+          type="submit" aria-label="{% if in_wishlist %}Remove from wishlist{% else %}Save to wishlist{% endif %}">
+    <i class="bi {% if in_wishlist %}bi-heart-fill{% else %}bi-heart{% endif %}"></i>
+  </button>
+</form>

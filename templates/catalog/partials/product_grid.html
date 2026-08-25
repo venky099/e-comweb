@@ -1,0 +1,26 @@
+{% comment %}
+Result grid. Rendered standalone for HTMX filter/sort swaps, and included by
+the full listing page.
+{% endcomment %}
+{% if products %}
+  <div class="product-grid" id="product-grid">
+    {% for product in products %}
+      {% include "partials/product_card.html" %}
+    {% endfor %}
+  </div>
+  {% include "partials/pagination.html" %}
+{% else %}
+  <div class="empty-state">
+    <i class="bi bi-search"></i>
+    <h3>No products match your filters</h3>
+    <p>
+      {% if search_term %}
+        We could not find anything for &ldquo;{{ search_term }}&rdquo;. Try a different spelling, a broader term,
+        or clear some filters.
+      {% else %}
+        Try widening your price range or clearing a filter.
+      {% endif %}
+    </p>
+    <a href="{% url 'catalog:product_list' %}" class="btn btn-primary">Browse all products</a>
+  </div>
+{% endif %}

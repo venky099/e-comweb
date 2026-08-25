@@ -1,0 +1,26 @@
+{% comment %}Compact basket recap shown alongside each checkout step.{% endcomment %}
+<div class="bg-body border rounded-3 p-3 mb-3">
+  <h2 class="h6 mb-3">{{ summary.item_count }} item{{ summary.item_count|pluralize }} in this order</h2>
+  {% for item in items %}
+    <div class="d-flex gap-2 align-items-center mb-2">
+      {% if item.variant.image %}
+        <img src="{{ item.variant.image.url }}" alt="" style="width:44px;height:44px;object-fit:cover;border-radius:8px">
+      {% else %}
+        {% with image=item.variant.product.primary_image %}
+          {% if image %}
+            <img src="{{ image.image.url }}" alt="" style="width:44px;height:44px;object-fit:cover;border-radius:8px">
+          {% else %}
+            <span class="placeholder-media" style="width:44px;height:44px;border-radius:8px"></span>
+          {% endif %}
+        {% endwith %}
+      {% endif %}
+      <div class="flex-grow-1 small">
+        <div class="fw-semibold">{{ item.variant.product.name|truncatechars:38 }}</div>
+        <div class="text-body-secondary">
+          {% if item.variant.label != "Default" %}{{ item.variant.label }} &middot; {% endif %}Qty {{ item.quantity }}
+        </div>
+      </div>
+      <div class="small fw-semibold">{{ CURRENCY_SYMBOL }}{{ item.line_total|floatformat:2 }}</div>
+    </div>
+  {% endfor %}
+</div>

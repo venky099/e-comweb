@@ -1,0 +1,140 @@
+{% extends "base.html" %}
+{% load humanize %}
+
+{% block title %}My account &mdash; {{ SITE_NAME }}{% endblock %}
+
+{% block content %}
+<div class="container-xxl">
+  <div class="page-head">
+    <h1>Hello, {{ user.first_name|default:user.email }}</h1>
+    <p>Manage your orders, addresses and profile</p>
+  </div>
+
+  {# ---- stats ---- #}
+  <div class="row g-3 mb-4">
+    <div class="col-6 col-lg-3">
+      <div class="stat-card accent-brand">
+        <p class="stat-label">Total orders</p>
+        <p class="stat-value">{{ stats.total_orders|default:0 }}</p>
+      </div>
+    </div>
+    <div class="col-6 col-lg-3">
+      <div class="stat-card accent-warning">
+        <p class="stat-label">In progress</p>
+        <p class="stat-value">{{ stats.in_progress|default:0 }}</p>
+      </div>
+    </div>
+    <div class="col-6 col-lg-3">
+      <div class="stat-card accent-success">
+        <p class="stat-label">Delivered</p>
+        <p class="stat-value">{{ stats.delivered|default:0 }}</p>
+      </div>
+    </div>
+    <div class="col-6 col-lg-3">
+      <div class="stat-card">
+        <p class="stat-label">Total spent</p>
+        <p class="stat-value">{{ CURRENCY_SYMBOL }}{{ stats.lifetime_value|default:0|floatformat:2 }}</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="row g-4">
+
+    {# ---- quick links ---- #}
+    <div class="col-lg-4">
+      <div class="panel">
+        <div class="panel-head"><h3>Quick links</h3></div>
+        <div class="list-group list-group-flush">
+          <a href="{% url 'orders:list' %}" class="list-group-item list-group-item-action d-flex align-items-center gap-3">
+            <i class="bi bi-box-seam fs-5 text-primary"></i>
+            <span class="flex-grow-1"><strong class="d-block small">My orders</strong>
+              <span class="small text-body-secondary">Track, cancel or reorder</span></span>
+            <i class="bi bi-chevron-right text-body-secondary"></i>
+          </a>
+          <a href="{% url 'accounts:address_list' %}" class="list-group-item list-group-item-action d-flex align-items-center gap-3">
+            <i class="bi bi-geo-alt fs-5 text-primary"></i>
+            <span class="flex-grow-1"><strong class="d-block small">Addresses</strong>
+              <span class="small text-body-secondary">{{ address_count }} saved</span></span>
+            <i class="bi bi-chevron-right text-body-secondary"></i>
+          </a>
+          <a href="{% url 'wishlist:detail' %}" class="list-group-item list-group-item-action d-flex align-items-center gap-3">
+            <i class="bi bi-heart fs-5 text-primary"></i>
+            <span class="flex-grow-1"><strong class="d-block small">Wishlist</strong>
+              <span class="small text-body-secondary">{{ header_wishlist_count }} saved item{{ header_wishlist_count|pluralize }}</span></span>
+            <i class="bi bi-chevron-right text-body-secondary"></i>
+          </a>
+          <a href="{% url 'orders:returns' %}" class="list-group-item list-group-item-action d-flex align-items-center gap-3">
+            <i class="bi bi-arrow-return-left fs-5 text-primary"></i>
+            <span class="flex-grow-1"><strong class="d-block small">Returns &amp; refunds</strong>
+              <span class="small text-body-secondary">Track your requests</span></span>
+            <i class="bi bi-chevron-right text-body-secondary"></i>
+          </a>
+          <a href="{% url 'reviews:mine' %}" class="list-group-item list-group-item-action d-flex align-items-center gap-3">
+            <i class="bi bi-star fs-5 text-primary"></i>
+            <span class="flex-grow-1"><strong class="d-block small">My reviews</strong>
+              <span class="small text-body-secondary">Rate what you bought</span></span>
+            <i class="bi bi-chevron-right text-body-secondary"></i>
+          </a>
+          <a href="{% url 'accounts:profile' %}" class="list-group-item list-group-item-action d-flex align-items-center gap-3">
+            <i class="bi bi-person-gear fs-5 text-primary"></i>
+            <span class="flex-grow-1"><strong class="d-block small">Profile settings</strong>
+              <span class="small text-body-secondary">Name, phone, password</span></span>
+            <i class="bi bi-chevron-right text-body-secondary"></i>
+          </a>
+        </div>
+      </div>
+    </div>
+
+    {# ---- recent orders ---- #}
+    <div class="col-lg-8">
+      <div class="panel">
+        <div class="panel-head">
+          <h3>Recent orders</h3>
+          <a href="{% url 'orders:list' %}" class="small text-decoration-none">View all</a>
+        </div>
+        <div class="panel-body">
+          {% if recent_orders %}
+            {% for order in recent_orders %}
+              <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 py-3 border-bottom">
+                <div>
+                  <a href="{% url 'orders:detail' order.order_number %}" class="fw-semibold text-decoration-none">
+                    {{ order.order_number }}
+                  </a>
+                  <div class="small text-body-secondary">
+                    {{ order.placed_at|date:"d M Y" }} &middot; {{ order.item_count }} item{{ order.item_count|pluralize }}
+                  </div>
+                </div>
+                <div class="text-end">
+                  <div class="fw-bold">{{ CURRENCY_SYMBOL }}{{ order.total_amount|floatformat:2 }}</div>
+                  <span class="badge bg-{{ order.status_badge }}">{{ order.get_status_display }}</span>
+                </div>
+              </div>
+            {% endfor %}
+          {% else %}
+            <div class="empty-state border-0 py-4">
+              <i class="bi bi-box-seam"></i>
+              <h3 class="h6">No orders yet</h3>
+              <p class="mb-3">Once you place an order it will show up here.</p>
+              <a href="{% url 'catalog:product_list' %}" class="btn btn-primary btn-sm">Start shopping</a>
+            </div>
+          {% endif %}
+        </div>
+      </div>
+
+      {% if default_address %}
+        <div class="panel mt-3">
+          <div class="panel-head">
+            <h3>Default delivery address</h3>
+            <a href="{% url 'accounts:address_list' %}" class="small text-decoration-none">Manage</a>
+          </div>
+          <div class="panel-body">
+            <p class="mb-1"><strong>{{ default_address.full_name }}</strong></p>
+            <p class="small text-body-secondary mb-1">{{ default_address.single_line }}</p>
+            <p class="small text-body-secondary mb-0"><i class="bi bi-telephone me-1"></i>{{ default_address.phone }}</p>
+          </div>
+        </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

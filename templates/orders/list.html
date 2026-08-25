@@ -1,0 +1,109 @@
+{% extends "base.html" %}
+
+{% block title %}My orders &mdash; {{ SITE_NAME }}{% endblock %}
+
+{% block content %}
+<div class="container-xxl">
+  <div class="page-head">
+    <h1>My orders</h1>
+    <p>{{ paginator.count }} order{{ paginator.count|pluralize }}</p>
+  </div>
+
+  <form method="get" class="toolbar">
+    <div class="d-flex flex-wrap gap-2 align-items-center flex-grow-1">
+      <div class="input-group input-group-sm" style="max-width: 320px">
+        <span class="input-group-text"><i class="bi bi-search"></i></span>
+        <input type="search" name="q" class="form-control" placeholder="Order number or product"
+               value="{{ search_term }}">
+      </div>
+      <select name="status" class="form-select form-select-sm w-auto" data-autosubmit>
+        <option value="">All statuses</option>
+        {% for value, label in status_choices %}
+          <option value="{{ value }}" {% if value == active_status %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+      <button class="btn btn-sm btn-outline-primary" type="submit">Filter</button>
+      {% if search_term or active_status %}
+        <a href="{% url 'orders:list' %}" class="btn btn-sm btn-link text-decoration-none">Clear</a>
+      {% endif %}
+    </div>
+  </form>
+
+  {% if orders %}
+    {% for order in orders %}
+      <div class="order-card">
+        <div class="order-card-head">
+          <div class="d-flex flex-wrap gap-4">
+            <div class="order-meta">Order placed<strong>{{ order.placed_at|date:"d M Y" }}</strong></div>
+            <div class="order-meta">Total<strong>{{ CURRENCY_SYMBOL }}{{ order.total_amount|floatformat:2 }}</strong></div>
+            <div class="order-meta">Order number<strong>{{ order.order_number }}</strong></div>
+          </div>
+          <div class="d-flex align-items-center gap-2">
+            <span class="badge bg-{{ order.status_badge }}">{{ order.get_status_display }}</span>
+            <a href="{% url 'orders:detail' order.order_number %}" class="btn btn-sm btn-outline-primary">View details</a>
+          </div>
+        </div>
+
+        <div class="p-3">
+          {% for item in order.items.all|slice:":3" %}
+            <div class="d-flex gap-3 align-items-center py-2">
+              {% if item.image_url %}
+                <img src="{{ item.image_url }}" alt="" style="width:56px;height:56px;object-fit:cover;border-radius:8px">
+              {% else %}
+                <span class="placeholder-media" style="width:56px;height:56px;border-radius:8px"></span>
+              {% endif %}
+              <div class="flex-grow-1">
+                <div class="small fw-semibold">
+                  {% if item.product %}
+                    <a href="{{ item.product.get_absolute_url }}" class="text-decoration-none text-body">{{ item.product_name }}</a>
+                  {% else %}{{ item.product_name }}{% endif %}
+                </div>
+                <div class="small text-body-secondary">
+                  {% if item.variant_label %}{{ item.variant_label }} &middot; {% endif %}Qty {{ item.quantity }}
+                </div>
+              </div>
+              <div class="small fw-semibold">{{ CURRENCY_SYMBOL }}{{ item.line_total|floatformat:2 }}</div>
+            </div>
+          {% endfor %}
+
+          {% if order.items.all|length > 3 %}
+            <p class="small text-body-secondary mb-0">
+              + {{ order.items.all|length|add:"-3" }} more item{{ order.items.all|length|add:"-3"|pluralize }}
+            </p>
+          {% endif %}
+
+          <div class="d-flex flex-wrap gap-2 mt-2">
+            <a href="{% url 'orders:track' order.order_number %}" class="btn btn-sm btn-outline-secondary">
+              <i class="bi bi-geo-alt me-1"></i>Track
+            </a>
+            <form method="post" action="{% url 'orders:reorder' order.order_number %}">
+              {% csrf_token %}
+              <button class="btn btn-sm btn-outline-secondary" type="submit">
+                <i class="bi bi-arrow-repeat me-1"></i>Buy again
+              </button>
+            </form>
+            {% if order.can_be_cancelled %}
+              <a href="{% url 'orders:detail' order.order_number %}#cancel" class="btn btn-sm btn-outline-danger">Cancel</a>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    {% endfor %}
+
+    {% include "partials/pagination.html" %}
+  {% else %}
+    <div class="empty-state">
+      <i class="bi bi-box-seam"></i>
+      <h3>{% if search_term or active_status %}No matching orders{% else %}No orders yet{% endif %}</h3>
+      <p>
+        {% if search_term or active_status %}
+          Try clearing the filters to see all of your orders.
+        {% else %}
+          When you place an order it will appear here with live tracking.
+        {% endif %}
+      </p>
+      <a href="{% url 'catalog:product_list' %}" class="btn btn-primary">Start shopping</a>
+    </div>
+  {% endif %}
+</div>
+{% endblock %}

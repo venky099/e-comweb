@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+
+{% block title %}About us &mdash; {{ SITE_NAME }}{% endblock %}
+
+{% block content %}
+<div class="container-xxl">
+  <div class="page-head">
+    <h1>About {{ SITE_NAME }}</h1>
+    <p>{{ SITE_TAGLINE }}</p>
+  </div>
+
+  <div class="row g-4">
+    <div class="col-lg-8">
+      <div class="bg-body border rounded-3 p-3 p-md-4">
+        <h2 class="h5">Who we are</h2>
+        <p>
+          {{ SITE_NAME }} is an online store built to make everyday shopping straightforward:
+          a catalog you can actually search, prices without surprises at checkout, and a returns
+          process that does not fight you.
+        </p>
+
+        <h2 class="h5 mt-4">How we work</h2>
+        <ul>
+          <li><strong>Honest pricing.</strong> The price on the product page is the price you pay, plus delivery shown before you commit.</li>
+          <li><strong>Real stock.</strong> Availability is checked against live inventory when you add to cart and again when you place the order.</li>
+          <li><strong>Verified reviews.</strong> Only customers who actually received a product can review it.</li>
+          <li><strong>{{ RETURN_WINDOW_DAYS }}-day returns.</strong> Change your mind within {{ RETURN_WINDOW_DAYS }} days of delivery and send it back.</li>
+        </ul>
+
+        <h2 class="h5 mt-4">Delivery</h2>
+        <p>
+          Orders over {{ CURRENCY_SYMBOL }}{{ FREE_DELIVERY_THRESHOLD }} ship free. Below that a flat
+          {{ CURRENCY_SYMBOL }}{{ DELIVERY_CHARGE }} delivery fee applies. Most orders arrive within
+          3&ndash;5 working days, and every order gets a tracking page.
+        </p>
+
+        <h2 class="h5 mt-4">Payments</h2>
+        <p>
+          We accept UPI, cards, net banking, wallets and cash on delivery on eligible items.
+          Card details never touch our servers &mdash; payments are handled by our gateway and
+          verified server-side before an order is confirmed.
+        </p>
+      </div>
+    </div>
+
+    <div class="col-lg-4">
+      <div class="summary-card">
+        <h2 class="h6 mb-2">Get in touch</h2>
+        <p class="small mb-1"><i class="bi bi-envelope me-2"></i><a href="mailto:{{ SUPPORT_EMAIL }}">{{ SUPPORT_EMAIL }}</a></p>
+        <p class="small mb-3"><i class="bi bi-telephone me-2"></i>{{ SUPPORT_PHONE }}</p>
+        <a href="{% url 'core:contact' %}" class="btn btn-outline-primary w-100">Contact us</a>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

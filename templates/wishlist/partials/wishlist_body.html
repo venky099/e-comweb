@@ -1,0 +1,82 @@
+{% if items %}
+  <div class="row g-3">
+    {% for item in items %}
+      <div class="col-12">
+        <div class="bg-body border rounded-3 p-3">
+          <div class="cart-line border-0 py-0">
+
+            <div class="cart-line-media">
+              <a href="{{ item.product.get_absolute_url }}">
+                {% with image=item.product.primary_image %}
+                  {% if image %}
+                    <img src="{{ image.image.url }}" alt="{{ item.product.name }}">
+                  {% else %}
+                    <span class="placeholder-media d-block" style="width:96px;height:96px;border-radius:10px"></span>
+                  {% endif %}
+                {% endwith %}
+              </a>
+            </div>
+
+            <div class="cart-line-info">
+              {% if item.product.brand %}
+                <p class="product-card-brand mb-1">{{ item.product.brand.name }}</p>
+              {% endif %}
+              <a href="{{ item.product.get_absolute_url }}" class="fw-semibold text-decoration-none d-block">
+                {{ item.product.name }}
+              </a>
+              {% if item.variant %}
+                <p class="small text-body-secondary mb-1">{{ item.variant.label }}</p>
+              {% endif %}
+
+              <div class="product-card-price mb-2">
+                <span class="price-now">{{ CURRENCY_SYMBOL }}{{ item.product.price|floatformat:2 }}</span>
+                {% if item.product.has_discount %}
+                  <span class="price-was">{{ CURRENCY_SYMBOL }}{{ item.product.compare_at_price|floatformat:2 }}</span>
+                  <span class="badge bg-danger">-{{ item.product.discount_percent }}%</span>
+                {% endif %}
+              </div>
+
+              {% if item.in_stock %}
+                <p class="small text-success mb-2"><i class="bi bi-check-circle me-1"></i>In stock</p>
+              {% else %}
+                <p class="small text-danger mb-2"><i class="bi bi-x-circle me-1"></i>Out of stock</p>
+              {% endif %}
+
+              <div class="d-flex flex-wrap gap-2">
+                {% if item.in_stock %}
+                  <form method="post" action="{% url 'wishlist:move_to_cart' item.pk %}">
+                    {% csrf_token %}
+                    <button class="btn btn-primary btn-sm" type="submit">
+                      <i class="bi bi-bag-plus me-1"></i>Move to cart
+                    </button>
+                  </form>
+                {% else %}
+                  <a href="{{ item.product.get_absolute_url }}" class="btn btn-outline-secondary btn-sm">View product</a>
+                {% endif %}
+
+                <form method="post" action="{% url 'wishlist:remove' item.pk %}"
+                      hx-post="{% url 'wishlist:remove' item.pk %}" hx-target="#wishlist-container" hx-swap="innerHTML">
+                  {% csrf_token %}
+                  <button class="btn btn-outline-danger btn-sm" type="submit">
+                    <i class="bi bi-trash me-1"></i>Remove
+                  </button>
+                </form>
+              </div>
+            </div>
+
+            <div class="cart-line-total text-end small text-body-secondary">
+              Saved {{ item.created_at|date:"d M Y" }}
+            </div>
+          </div>
+        </div>
+      </div>
+    {% endfor %}
+  </div>
+{% else %}
+  <div class="empty-state">
+    <i class="bi bi-heart"></i>
+    <h3>Your wishlist is empty</h3>
+    <p>Tap the heart on any product to save it here for later.</p>
+    <a href="{% url 'catalog:product_list' %}" class="btn btn-primary">Browse products</a>
+  </div>
+{% endif %}

@@ -1,0 +1,100 @@
+{% extends "base.html" %}
+
+{% block title %}Reviews for {{ product.name }}{% endblock %}
+
+{% block content %}
+<div class="container-xxl">
+  <div class="page-head">
+    <h1>Reviews</h1>
+    <p><a href="{{ product.get_absolute_url }}" class="text-decoration-none">{{ product.name }}</a></p>
+  </div>
+
+  <form method="get" class="toolbar">
+    <div class="d-flex flex-wrap gap-2 align-items-center">
+      <select name="rating" class="form-select form-select-sm w-auto" data-autosubmit>
+        <option value="">All ratings</option>
+        {% for stars in "54321" %}
+          <option value="{{ stars }}" {% if active_rating == stars %}selected{% endif %}>{{ stars }} star</option>
+        {% endfor %}
+      </select>
+      <div class="form-check">
+        <input class="form-check-input" type="checkbox" name="verified" value="1" id="verified-only"
+               data-autosubmit {% if request.GET.verified == "1" %}checked{% endif %}>
+        <label class="form-check-label small" for="verified-only">Verified purchases only</label>
+      </div>
+      <div class="form-check">
+        <input class="form-check-input" type="checkbox" name="with_photos" value="1" id="with-photos"
+               data-autosubmit {% if request.GET.with_photos == "1" %}checked{% endif %}>
+        <label class="form-check-label small" for="with-photos">With photos</label>
+      </div>
+    </div>
+    <div class="d-flex align-items-center gap-2">
+      <label for="sort" class="small text-body-secondary mb-0">Sort by</label>
+      <select name="sort" id="sort" class="form-select form-select-sm w-auto" data-autosubmit>
+        <option value="recent" {% if sort == "recent" %}selected{% endif %}>Most recent</option>
+        <option value="helpful" {% if sort == "helpful" %}selected{% endif %}>Most helpful</option>
+        <option value="highest" {% if sort == "highest" %}selected{% endif %}>Highest rated</option>
+        <option value="lowest" {% if sort == "lowest" %}selected{% endif %}>Lowest rated</option>
+      </select>
+    </div>
+  </form>
+
+  {% if reviews %}
+    <div class="bg-body border rounded-3 p-3 p-md-4">
+      {% for review in reviews %}
+        <div class="border-bottom pb-3 mb-3">
+          <div class="d-flex justify-content-between align-items-start gap-2">
+            <div>
+              <div class="rating-stars">
+                {% for i in "12345" %}
+                  <i class="bi {% if forloop.counter <= review.rating %}bi-star-fill{% else %}bi-star{% endif %}"></i>
+                {% endfor %}
+              </div>
+              {% if review.title %}<h2 class="h6 fw-semibold mt-1 mb-1">{{ review.title }}</h2>{% endif %}
+            </div>
+            <span class="small text-body-secondary text-nowrap">{{ review.created_at|date:"d M Y" }}</span>
+          </div>
+
+          {% if review.comment %}<p class="mb-2">{{ review.comment|linebreaksbr }}</p>{% endif %}
+
+          {% if review.images.all %}
+            <div class="d-flex gap-2 mb-2 flex-wrap">
+              {% for image in review.images.all %}
+                <img src="{{ image.image.url }}" alt="{{ image.caption }}"
+                     style="width:72px;height:72px;object-fit:cover;border-radius:8px">
+              {% endfor %}
+            </div>
+          {% endif %}
+
+          <div class="d-flex flex-wrap align-items-center gap-3">
+            <span class="small text-body-secondary">
+              {{ review.author_name }}
+              {% if review.verified_purchase %}
+                <span class="badge bg-success-subtle text-success ms-1">
+                  <i class="bi bi-patch-check me-1"></i>Verified purchase
+                </span>
+              {% endif %}
+            </span>
+            {% include "reviews/partials/helpful_button.html" with review=review voted=False %}
+          </div>
+
+          {% if review.staff_reply %}
+            <div class="bg-body-secondary rounded p-2 mt-2 small">
+              <strong>{{ SITE_NAME }} replied:</strong> {{ review.staff_reply }}
+            </div>
+          {% endif %}
+        </div>
+      {% endfor %}
+    </div>
+
+    {% include "partials/pagination.html" %}
+  {% else %}
+    <div class="empty-state">
+      <i class="bi bi-chat-square-text"></i>
+      <h3>No reviews match these filters</h3>
+      <p>Try clearing a filter, or be the first to review this product.</p>
+      <a href="{{ product.get_absolute_url }}" class="btn btn-primary">Back to product</a>
+    </div>
+  {% endif %}
+</div>
+{% endblock %}

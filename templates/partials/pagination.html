@@ -1,0 +1,55 @@
+{% comment %}
+Pagination that preserves the current filters.
+`querystring` comes from the listing view and already starts with "&".
+
+The prev/next links are only rendered when the page actually exists --
+``previous_page_number`` raises EmptyPage on page 1, so it must never be
+evaluated outside its guard.
+{% endcomment %}
+{% if page_obj.paginator.num_pages > 1 %}
+  <nav aria-label="Pagination" class="mt-4">
+    <ul class="pagination justify-content-center flex-wrap">
+
+      {% if page_obj.has_previous %}
+        <li class="page-item">
+          <a class="page-link" href="?page={{ page_obj.previous_page_number }}{{ querystring }}" aria-label="Previous">
+            <i class="bi bi-chevron-left"></i>
+          </a>
+        </li>
+      {% else %}
+        <li class="page-item disabled">
+          <span class="page-link"><i class="bi bi-chevron-left"></i></span>
+        </li>
+      {% endif %}
+
+      {% for num in page_obj.paginator.page_range %}
+        {% if num == page_obj.number %}
+          <li class="page-item active" aria-current="page"><span class="page-link">{{ num }}</span></li>
+        {% elif num > page_obj.number|add:"-3" and num < page_obj.number|add:"3" %}
+          <li class="page-item"><a class="page-link" href="?page={{ num }}{{ querystring }}">{{ num }}</a></li>
+        {% elif num == 1 or num == page_obj.paginator.num_pages %}
+          <li class="page-item"><a class="page-link" href="?page={{ num }}{{ querystring }}">{{ num }}</a></li>
+        {% elif num == page_obj.number|add:"-3" or num == page_obj.number|add:"3" %}
+          <li class="page-item disabled"><span class="page-link">&hellip;</span></li>
+        {% endif %}
+      {% endfor %}
+
+      {% if page_obj.has_next %}
+        <li class="page-item">
+          <a class="page-link" href="?page={{ page_obj.next_page_number }}{{ querystring }}" aria-label="Next">
+            <i class="bi bi-chevron-right"></i>
+          </a>
+        </li>
+      {% else %}
+        <li class="page-item disabled">
+          <span class="page-link"><i class="bi bi-chevron-right"></i></span>
+        </li>
+      {% endif %}
+    </ul>
+
+    <p class="text-center small text-body-secondary">
+      Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
+      &middot; {{ page_obj.paginator.count }} result{{ page_obj.paginator.count|pluralize }}
+    </p>
+  </nav>
+{% endif %}

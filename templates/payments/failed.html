@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+
+{% block title %}Payment failed &mdash; Order {{ order.order_number }}{% endblock %}
+
+{% block content %}
+<div class="container-xxl">
+  <div class="row justify-content-center py-5">
+    <div class="col-lg-6 text-center">
+
+      <span class="d-inline-block rounded-circle bg-danger text-white mb-3"
+            style="width:72px;height:72px;display:grid;place-items:center;font-size:2rem">
+        <i class="bi bi-x-lg"></i>
+      </span>
+
+      <h1 class="h3 fw-bold">Payment was not completed</h1>
+      <p class="text-body-secondary">
+        Your order <strong>{{ order.order_number }}</strong> has been saved, but it is not paid yet.
+        Nothing has been charged.
+      </p>
+
+      {% if payment.error_message %}
+        <div class="alert alert-danger small text-start">
+          <strong>Reason:</strong> {{ payment.error_message }}
+        </div>
+      {% endif %}
+
+      <div class="bg-body border rounded-3 p-3 my-4 text-start">
+        <div class="summary-row"><span>Order total</span>
+          <span class="fw-bold">{{ CURRENCY_SYMBOL }}{{ order.total_amount|floatformat:2 }}</span></div>
+        <div class="summary-row"><span>Items</span><span>{{ order.item_count }}</span></div>
+        <div class="summary-row"><span>Status</span>
+          <span><span class="badge bg-{{ order.status_badge }}">{{ order.get_status_display }}</span></span></div>
+      </div>
+
+      <div class="d-grid gap-2">
+        <a href="{% url 'payments:start' order.order_number %}" class="btn btn-primary btn-lg">
+          <i class="bi bi-arrow-clockwise me-1"></i>Try payment again
+        </a>
+        <a href="{% url 'orders:detail' order.order_number %}" class="btn btn-outline-secondary">View order details</a>
+        <a href="{% url 'catalog:product_list' %}" class="btn btn-link text-decoration-none">Continue shopping</a>
+      </div>
+
+      <p class="small text-body-secondary mt-4">
+        Need help? Email <a href="mailto:{{ SUPPORT_EMAIL }}">{{ SUPPORT_EMAIL }}</a>
+        or call {{ SUPPORT_PHONE }} quoting your order number.
+      </p>
+    </div>
+  </div>
+</div>
+{% endblock %}

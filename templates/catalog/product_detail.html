@@ -1,0 +1,354 @@
+{% extends "base.html" %}
+{% load humanize %}
+
+{% block title %}{{ product.meta_title|default:product.name }} &mdash; {{ SITE_NAME }}{% endblock %}
+{% block meta_description %}{{ product.meta_description|default:product.short_description|default:product.name }}{% endblock %}
+
+{% block breadcrumbs %}
+<div class="container-xxl pt-3">
+  <nav aria-label="breadcrumb">
+    <ol class="breadcrumb small mb-0">
+      <li class="breadcrumb-item"><a href="{% url 'core:home' %}">Home</a></li>
+      {% for crumb in breadcrumbs %}
+        <li class="breadcrumb-item"><a href="{% url 'catalog:category' crumb.slug %}">{{ crumb.name }}</a></li>
+      {% endfor %}
+      <li class="breadcrumb-item active" aria-current="page">{{ product.name|truncatechars:40 }}</li>
+    </ol>
+  </nav>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="container-xxl py-3">
+  <div class="row g-4 g-lg-5">
+
+    {# ---------------- gallery ---------------- #}
+    <div class="col-lg-5">
+      {% with primary=product.primary_image %}
+        <div class="gallery-main">
+          {% if primary %}
+            <img src="{{ primary.image.url }}" alt="{{ primary.alt_text|default:product.name }}" data-gallery-main>
+          {% else %}
+            <div class="placeholder-media"><i class="bi bi-image"></i></div>
+          {% endif %}
+        </div>
+        {% if product.images.all|length > 1 %}
+          <div class="gallery-thumbs">
+            {% for image in product.images.all %}
+              <button type="button" class="gallery-thumb {% if image == primary %}is-active{% endif %}"
+                      data-gallery-thumb="{{ image.image.url }}" aria-label="View image {{ forloop.counter }}">
+                <img src="{{ image.image.url }}" alt="{{ image.alt_text|default:product.name }}" loading="lazy">
+              </button>
+            {% endfor %}
+          </div>
+        {% endif %}
+      {% endwith %}
+    </div>
+
+    {# ---------------- buy box ---------------- #}
+    <div class="col-lg-7" data-variant-root
+         data-currency="{{ CURRENCY_SYMBOL }}"
+         data-selected-size="{{ selected_variant.size|default:'' }}"
+         data-selected-color="{{ selected_variant.color|default:'' }}">
+
+      {% if product.brand %}
+        <a href="{% url 'catalog:product_list' %}?brand={{ product.brand.slug }}"
+           class="text-decoration-none small text-uppercase fw-semibold text-body-secondary">{{ product.brand.name }}</a>
+      {% endif %}
+
+      <h1 class="h3 fw-bold mt-1">{{ product.name }}</h1>
+
+      <div class="d-flex flex-wrap align-items-center gap-3 mb-2">
+        {% if review_stats.total %}
+          <a href="#reviews" class="text-decoration-none d-flex align-items-center gap-1">
+            {% include "partials/rating_stars.html" with rating=review_stats.average count=review_stats.total %}
+          </a>
+        {% else %}
+          <span class="small text-body-secondary">No reviews yet</span>
+        {% endif %}
+        <span class="small text-body-secondary">SKU: {{ product.sku }}</span>
+        {% if product.sold_count %}
+          <span class="small text-body-secondary">{{ product.sold_count|intcomma }} sold</span>
+        {% endif %}
+      </div>
+
+      {% if product.short_description %}
+        <p class="text-body-secondary">{{ product.short_description }}</p>
+      {% endif %}
+
+      <div class="d-flex align-items-baseline gap-2 flex-wrap my-3">
+        <span class="fs-2 fw-bold" data-price-now>
+          {{ CURRENCY_SYMBOL }}{{ selected_variant.price|default:product.price|floatformat:2 }}
+        </span>
+        <span class="price-was fs-6" data-price-was {% if not product.has_discount %}hidden{% endif %}>
+          {{ CURRENCY_SYMBOL }}{{ product.compare_at_price|default_if_none:''|floatformat:2 }}
+        </span>
+        <span class="badge bg-danger" data-price-off {% if not product.discount_percent %}hidden{% endif %}>
+          -{{ product.discount_percent }}%
+        </span>
+      </div>
+
+      {% if selected_variant %}
+        <p class="small mb-3
+          {% if selected_variant.available_quantity <= 0 %}text-danger
+          {% elif selected_variant.is_low_stock %}text-warning
+          {% else %}text-success{% endif %}" data-stock-note>
+          {% if selected_variant.available_quantity <= 0 %}Out of stock
+          {% elif selected_variant.is_low_stock %}Hurry - only {{ selected_variant.available_quantity }} left
+          {% else %}In stock{% endif %}
+        </p>
+      {% else %}
+        <p class="small text-danger mb-3" data-stock-note>Out of stock</p>
+      {% endif %}
+
+      {# ---- variant options ---- #}
+      {% if colors %}
+        <div class="mb-3">
+          <p class="small fw-semibold mb-1">Colour</p>
+          <div class="d-flex flex-wrap gap-2">
+            {% for name, hex in colors %}
+              <button type="button" class="option-btn d-inline-flex align-items-center gap-2
+                      {% if selected_variant.color == name %}is-active{% endif %}"
+                      data-option="color" data-value="{{ name }}">
+                <span class="swatch" style="width:16px;height:16px;background:{{ hex|default:'#cbd5e1' }};border-width:1px"></span>
+                {{ name }}
+              </button>
+            {% endfor %}
+          </div>
+        </div>
+      {% endif %}
+
+      {% if sizes %}
+        <div class="mb-3">
+          <p class="small fw-semibold mb-1">Size</p>
+          <div class="d-flex flex-wrap gap-2">
+            {% for size in sizes %}
+              <button type="button" class="option-btn {% if selected_variant.size == size %}is-active{% endif %}"
+                      data-option="size" data-value="{{ size }}">{{ size }}</button>
+            {% endfor %}
+          </div>
+        </div>
+      {% endif %}
+
+      {# ---- add to cart ---- #}
+      <form method="post" action="{% url 'cart:add' %}" class="row g-2 align-items-end mb-3">
+        {% csrf_token %}
+        <input type="hidden" name="variant_id" value="{{ selected_variant.pk|default:'' }}" data-variant-input>
+
+        <div class="col-4 col-sm-3">
+          <label for="quantity" class="form-label small mb-1">Quantity</label>
+          <select name="quantity" id="quantity" class="form-select" data-qty-select
+                  data-max="{{ MAX_CART_QUANTITY_PER_ITEM }}"
+                  {% if not selected_variant or not selected_variant.in_stock %}disabled{% endif %}>
+            {% for i in "12345"|make_list %}
+              <option value="{{ forloop.counter }}">{{ forloop.counter }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="col-8 col-sm-5">
+          <button type="submit" class="btn btn-primary w-100" data-add-button
+                  {% if not selected_variant or not selected_variant.in_stock %}disabled{% endif %}>
+            <i class="bi bi-bag-plus me-1"></i>Add to cart
+          </button>
+        </div>
+
+        <div class="col-12 col-sm-4">
+          <button type="submit" name="buy_now" value="1" class="btn btn-warning w-100"
+                  {% if not selected_variant or not selected_variant.in_stock %}disabled{% endif %}>
+            <i class="bi bi-lightning-charge me-1"></i>Buy now
+          </button>
+        </div>
+      </form>
+
+      <div class="d-flex flex-wrap gap-2 mb-4">
+        {% if user.is_authenticated %}
+          <form method="post" action="{% url 'wishlist:toggle' %}">
+            {% csrf_token %}
+            <input type="hidden" name="product_id" value="{{ product.pk }}">
+            <input type="hidden" name="variant_id" value="{{ selected_variant.pk|default:'' }}">
+            <button class="btn btn-outline-secondary" type="submit">
+              <i class="bi {% if in_wishlist %}bi-heart-fill text-danger{% else %}bi-heart{% endif %} me-1"></i>
+              {% if in_wishlist %}Saved to wishlist{% else %}Save for later{% endif %}
+            </button>
+          </form>
+        {% else %}
+          <a class="btn btn-outline-secondary" href="{% url 'accounts:login' %}?next={{ request.path }}">
+            <i class="bi bi-heart me-1"></i>Save for later
+          </a>
+        {% endif %}
+      </div>
+
+      {# ---- assurances ---- #}
+      <div class="row g-2 small">
+        <div class="col-6 col-md-3"><i class="bi bi-truck text-primary me-1"></i>Free over {{ CURRENCY_SYMBOL }}{{ FREE_DELIVERY_THRESHOLD }}</div>
+        <div class="col-6 col-md-3">
+          <i class="bi bi-arrow-counterclockwise text-primary me-1"></i>
+          {% if product.is_returnable %}{{ RETURN_WINDOW_DAYS }}-day returns{% else %}Non-returnable{% endif %}
+        </div>
+        <div class="col-6 col-md-3">
+          <i class="bi bi-cash-coin text-primary me-1"></i>
+          {% if product.is_cod_available %}COD available{% else %}Prepaid only{% endif %}
+        </div>
+        {% if product.warranty %}
+          <div class="col-6 col-md-3"><i class="bi bi-patch-check text-primary me-1"></i>{{ product.warranty }}</div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  {# ---------------- tabs ---------------- #}
+  <div class="row mt-5">
+    <div class="col-12">
+      <ul class="nav nav-tabs" role="tablist">
+        <li class="nav-item" role="presentation">
+          <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#tab-description" type="button" role="tab">Description</button>
+        </li>
+        {% if specifications %}
+          <li class="nav-item" role="presentation">
+            <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-specs" type="button" role="tab">Specifications</button>
+          </li>
+        {% endif %}
+        <li class="nav-item" role="presentation">
+          <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-reviews" type="button" role="tab">
+            Reviews {% if review_stats.total %}({{ review_stats.total }}){% endif %}
+          </button>
+        </li>
+      </ul>
+
+      <div class="tab-content bg-body border border-top-0 rounded-bottom p-3 p-md-4">
+
+        <div class="tab-pane fade show active" id="tab-description" role="tabpanel">
+          {% if product.description %}
+            <div class="lh-lg">{{ product.description|linebreaks }}</div>
+          {% else %}
+            <p class="text-body-secondary mb-0">No description has been added for this product yet.</p>
+          {% endif %}
+          {% if product.tag_list %}
+            <div class="d-flex flex-wrap gap-2 mt-3">
+              {% for tag in product.tag_list %}
+                <a href="{% url 'catalog:search' %}?q={{ tag|urlencode }}" class="filter-chip">{{ tag }}</a>
+              {% endfor %}
+            </div>
+          {% endif %}
+        </div>
+
+        {% if specifications %}
+          <div class="tab-pane fade" id="tab-specs" role="tabpanel">
+            <table class="table spec-table mb-0">
+              <tbody>
+                {% for key, value in specifications %}
+                  <tr><th scope="row">{{ key }}</th><td>{{ value }}</td></tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        {% endif %}
+
+        <div class="tab-pane fade" id="tab-reviews" role="tabpanel">
+          <span id="reviews"></span>
+          <div class="row g-4">
+            <div class="col-md-4">
+              <div class="text-center">
+                <div class="display-5 fw-bold">{{ review_stats.average|floatformat:1 }}</div>
+                <div class="rating-stars fs-5 mb-1">
+                  {% for i in "12345" %}
+                    <i class="bi {% if forloop.counter <= review_stats.average %}bi-star-fill{% else %}bi-star{% endif %}"></i>
+                  {% endfor %}
+                </div>
+                <p class="small text-body-secondary">{{ review_stats.total }} review{{ review_stats.total|pluralize }}</p>
+              </div>
+
+              {% for row in review_stats.distribution %}
+                <div class="d-flex align-items-center gap-2 mb-1 small">
+                  <span style="width:2.5rem">{{ row.stars }} star</span>
+                  <div class="rating-bar flex-grow-1"><span style="width: {{ row.percent }}%"></span></div>
+                  <span class="text-body-secondary" style="width:2rem">{{ row.count }}</span>
+                </div>
+              {% endfor %}
+
+              <div class="mt-3">
+                {% if can_review %}
+                  <a href="{% url 'reviews:write' product.slug %}" class="btn btn-outline-primary w-100">
+                    <i class="bi bi-pencil me-1"></i>Write a review
+                  </a>
+                {% elif user.is_authenticated %}
+                  <p class="small text-body-secondary mb-0">
+                    Only customers who received this product can review it.
+                  </p>
+                {% else %}
+                  <a href="{% url 'accounts:login' %}?next={{ request.path }}" class="btn btn-outline-secondary w-100">
+                    Sign in to review
+                  </a>
+                {% endif %}
+              </div>
+            </div>
+
+            <div class="col-md-8">
+              {% if reviews %}
+                {% for review in reviews %}
+                  <div class="border-bottom pb-3 mb-3">
+                    <div class="d-flex justify-content-between align-items-start gap-2">
+                      <div>
+                        <div class="rating-stars">
+                          {% for i in "12345" %}
+                            <i class="bi {% if forloop.counter <= review.rating %}bi-star-fill{% else %}bi-star{% endif %}"></i>
+                          {% endfor %}
+                        </div>
+                        {% if review.title %}<h4 class="h6 fw-semibold mt-1 mb-1">{{ review.title }}</h4>{% endif %}
+                      </div>
+                      <span class="small text-body-secondary text-nowrap">{{ review.created_at|date:"d M Y" }}</span>
+                    </div>
+                    {% if review.comment %}<p class="mb-2">{{ review.comment|linebreaksbr }}</p>{% endif %}
+                    {% if review.images.all %}
+                      <div class="d-flex gap-2 mb-2">
+                        {% for image in review.images.all %}
+                          <img src="{{ image.image.url }}" alt="" style="width:64px;height:64px;object-fit:cover;border-radius:8px">
+                        {% endfor %}
+                      </div>
+                    {% endif %}
+                    <p class="small text-body-secondary mb-0">
+                      {{ review.author_name }}
+                      {% if review.verified_purchase %}
+                        <span class="badge bg-success-subtle text-success ms-1"><i class="bi bi-patch-check me-1"></i>Verified purchase</span>
+                      {% endif %}
+                    </p>
+                    {% if review.staff_reply %}
+                      <div class="bg-body-secondary rounded p-2 mt-2 small">
+                        <strong>{{ SITE_NAME }} replied:</strong> {{ review.staff_reply }}
+                      </div>
+                    {% endif %}
+                  </div>
+                {% endfor %}
+                {% if review_stats.total > 10 %}
+                  <a href="{% url 'reviews:product' product.slug %}" class="btn btn-outline-secondary">
+                    Read all {{ review_stats.total }} reviews
+                  </a>
+                {% endif %}
+              {% else %}
+                <div class="empty-state py-4">
+                  <i class="bi bi-chat-square-text"></i>
+                  <h3 class="h6">No reviews yet</h3>
+                  <p class="mb-0">Be the first to share your experience with this product.</p>
+                </div>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  {# ---------------- related ---------------- #}
+  {% if related_products %}
+    <section class="section-block">
+      <div class="section-head"><h2>You may also like</h2></div>
+      <div class="product-grid">
+        {% for product in related_products %}{% include "partials/product_card.html" %}{% endfor %}
+      </div>
+    </section>
+  {% endif %}
+</div>
+
+{{ variant_matrix|json_script:"variant-matrix" }}
+{% endblock %}

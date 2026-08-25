@@ -1,0 +1,37 @@
+{% extends "admin/index.html" %}
+{% load i18n static %}
+
+{% comment %}
+Adds a link to the analytics dashboard above the standard app list.
+Django's default index is a model list; charts and aggregated reports live in
+the custom dashboard app instead of being crammed in here.
+{% endcomment %}
+
+{% block content %}
+  <div style="margin-bottom: 20px; padding: 18px 20px; border-radius: 10px;
+              background: linear-gradient(120deg, #312e81, #4338ca 60%, #f97316); color: #fff;">
+    <h2 style="margin: 0 0 6px; color: #fff; font-size: 1.15rem;">
+      {% translate "Store analytics" %}
+    </h2>
+    <p style="margin: 0 0 12px; opacity: .9; font-size: .9rem; max-width: 46rem;">
+      {% translate "Live sales, revenue, customer and inventory figures, with CSV exports for every report." %}
+    </p>
+    <a href="{% url 'dashboard:index' %}"
+       style="display:inline-block;background:#fff;color:#312e81;padding:.45rem 1rem;
+              border-radius:8px;font-weight:600;text-decoration:none;margin-right:.5rem;">
+      {% translate "Open dashboard" %}
+    </a>
+    <a href="{% url 'dashboard:reports' %}"
+       style="display:inline-block;border:1px solid rgba(255,255,255,.6);color:#fff;
+              padding:.45rem 1rem;border-radius:8px;font-weight:600;text-decoration:none;margin-right:.5rem;">
+      {% translate "Reports & exports" %}
+    </a>
+    <a href="{% url 'core:home' %}"
+       style="display:inline-block;border:1px solid rgba(255,255,255,.6);color:#fff;
+              padding:.45rem 1rem;border-radius:8px;font-weight:600;text-decoration:none;">
+      {% translate "View storefront" %}
+    </a>
+  </div>
+
+  {{ block.super }}
+{% endblock %}

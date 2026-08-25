@@ -1,0 +1,35 @@
+{% if term|length >= 2 %}
+  {% if categories %}
+    <p class="suggestion-heading mb-0">Categories</p>
+    {% for category in categories %}
+      <a class="suggestion-row" href="{% url 'catalog:category' category.slug %}">
+        <span class="category-tile-icon" style="width:40px;height:40px;font-size:1rem">
+          <i class="bi {{ category.icon_class|default:'bi-grid' }}"></i>
+        </span>
+        <span>{{ category.name }}</span>
+      </a>
+    {% endfor %}
+  {% endif %}
+
+  {% if suggestions %}
+    <p class="suggestion-heading mb-0">Products</p>
+    {% for product in suggestions %}
+      <a class="suggestion-row" href="{{ product.get_absolute_url }}">
+        {% with image=product.primary_image %}
+          {% if image %}<img src="{{ image.image.url }}" alt="">{% else %}<span class="placeholder-media" style="width:40px;height:40px;border-radius:8px"></span>{% endif %}
+        {% endwith %}
+        <span class="flex-grow-1">
+          <span class="d-block small fw-semibold">{{ product.name|truncatechars:52 }}</span>
+          {% if product.brand %}<span class="d-block text-body-secondary" style="font-size:.75rem">{{ product.brand.name }}</span>{% endif %}
+        </span>
+        <span class="fw-semibold small">{{ CURRENCY_SYMBOL }}{{ product.price|floatformat:2 }}</span>
+      </a>
+    {% endfor %}
+    <a class="suggestion-row justify-content-center small fw-semibold border-top"
+       href="{% url 'catalog:search' %}?q={{ term|urlencode }}">
+      See all results for &ldquo;{{ term }}&rdquo;
+    </a>
+  {% elif not categories %}
+    <p class="suggestion-heading mb-0 py-3 text-center">No matches for &ldquo;{{ term }}&rdquo;</p>
+  {% endif %}
+{% endif %}

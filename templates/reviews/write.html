@@ -1,0 +1,104 @@
+{% extends "base.html" %}
+
+{% block title %}Review {{ product.name }}{% endblock %}
+
+{% block content %}
+<div class="container-xxl">
+  <div class="page-head">
+    <h1>Write a review</h1>
+    <p>Share your experience to help other shoppers</p>
+  </div>
+
+  <div class="row g-4">
+    <div class="col-lg-7">
+      <div class="bg-body border rounded-3 p-3 p-md-4">
+
+        <div class="d-flex gap-3 align-items-center pb-3 mb-4 border-bottom">
+          {% with image=product.primary_image %}
+            {% if image %}
+              <img src="{{ image.image.url }}" alt="" style="width:72px;height:72px;object-fit:cover;border-radius:8px">
+            {% else %}
+              <span class="placeholder-media" style="width:72px;height:72px;border-radius:8px"></span>
+            {% endif %}
+          {% endwith %}
+          <div>
+            <div class="fw-semibold">{{ product.name }}</div>
+            {% if product.brand %}<div class="small text-body-secondary">{{ product.brand.name }}</div>{% endif %}
+          </div>
+        </div>
+
+        <form method="post" enctype="multipart/form-data" novalidate>
+          {% csrf_token %}
+
+          {% if form.non_field_errors %}
+            <div class="alert alert-danger py-2 small">{{ form.non_field_errors.0 }}</div>
+          {% endif %}
+
+          <div class="mb-4">
+            <label class="form-label small fw-semibold d-block">Your rating</label>
+            <div class="d-flex gap-2 flex-wrap">
+              {% for value, label in form.fields.rating.choices %}
+                <label class="option-btn">
+                  <input type="radio" name="rating" value="{{ value }}" class="d-none" required>
+                  <span class="rating-stars">
+                    {% for i in "12345" %}
+                      <i class="bi {% if forloop.counter <= value %}bi-star-fill{% else %}bi-star{% endif %}"></i>
+                    {% endfor %}
+                  </span>
+                </label>
+              {% endfor %}
+            </div>
+            {% if form.rating.errors %}<div class="text-danger small mt-1">{{ form.rating.errors.0 }}</div>{% endif %}
+          </div>
+
+          <div class="mb-3">
+            <label for="{{ form.title.id_for_label }}" class="form-label small fw-semibold">Review title</label>
+            {{ form.title }}
+          </div>
+
+          <div class="mb-3">
+            <label for="{{ form.comment.id_for_label }}" class="form-label small fw-semibold">Your review</label>
+            {{ form.comment }}
+          </div>
+
+          <div class="mb-4">
+            <label for="{{ form.images.id_for_label }}" class="form-label small fw-semibold">{{ form.images.label }}</label>
+            {{ form.images }}
+            <div class="form-text small">Up to 5 photos. JPG or PNG.</div>
+          </div>
+
+          <div class="d-flex gap-2">
+            <a href="{{ product.get_absolute_url }}" class="btn btn-outline-secondary">Cancel</a>
+            <button type="submit" class="btn btn-primary flex-grow-1">Submit review</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <div class="col-lg-5">
+      <div class="summary-card">
+        <h2 class="h6 mb-2">Review guidelines</h2>
+        <ul class="small text-body-secondary ps-3 mb-0">
+          <li>Focus on the product and your experience with it.</li>
+          <li>Mention what you liked and what could be better.</li>
+          <li>Avoid personal information and other retailers' links.</li>
+          <li>Your review is marked <em>verified purchase</em> because it is tied to a delivered order.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  // Highlight the selected star option (radios are visually hidden).
+  document.querySelectorAll('input[name="rating"]').forEach(function (input) {
+    input.addEventListener("change", function () {
+      document.querySelectorAll('input[name="rating"]').forEach(function (other) {
+        other.closest(".option-btn").classList.toggle("is-active", other.checked);
+      });
+    });
+  });
+</script>
+{% endblock %}

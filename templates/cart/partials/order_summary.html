@@ -1,0 +1,111 @@
+{% comment %}
+Order summary. Every number here is read from Cart.as_summary(), which is
+computed on the server; the template does no arithmetic of its own.
+Set `checkout_mode` to hide the coupon form on the payment step.
+{% endcomment %}
+<div class="summary-card" id="order-summary">
+  <h2 class="h6 mb-3">Order summary</h2>
+
+  <div class="summary-row">
+    <span>Subtotal ({{ summary.item_count }} item{{ summary.item_count|pluralize }})</span>
+    <span>{{ CURRENCY_SYMBOL }}{{ summary.mrp_total|floatformat:2 }}</span>
+  </div>
+
+  {% if summary.product_discount %}
+    <div class="summary-row">
+      <span>Product discount</span>
+      <span class="text-success">&minus; {{ CURRENCY_SYMBOL }}{{ summary.product_discount|floatformat:2 }}</span>
+    </div>
+  {% endif %}
+
+  {% if summary.coupon_code %}
+    <div class="summary-row">
+      <span>
+        Coupon <span class="coupon-chip ms-1">{{ summary.coupon_code }}</span>
+      </span>
+      <span class="text-success">&minus; {{ CURRENCY_SYMBOL }}{{ summary.coupon_discount|floatformat:2 }}</span>
+    </div>
+  {% endif %}
+
+  <div class="summary-row">
+    <span>Delivery</span>
+    {% if summary.delivery_charge %}
+      <span>{{ CURRENCY_SYMBOL }}{{ summary.delivery_charge|floatformat:2 }}</span>
+    {% else %}
+      <span class="text-success">FREE</span>
+    {% endif %}
+  </div>
+
+  {% if summary.tax_amount %}
+    <div class="summary-row">
+      <span>Tax</span>
+      <span>{{ CURRENCY_SYMBOL }}{{ summary.tax_amount|floatformat:2 }}</span>
+    </div>
+  {% endif %}
+
+  <div class="summary-row total">
+    <span>Total</span>
+    <span>{{ CURRENCY_SYMBOL }}{{ summary.total|floatformat:2 }}</span>
+  </div>
+
+  {% if summary.total_savings %}
+    <p class="small text-success mb-0 mt-2">
+      <i class="bi bi-piggy-bank me-1"></i>You save {{ CURRENCY_SYMBOL }}{{ summary.total_savings|floatformat:2 }} on this order
+    </p>
+  {% endif %}
+
+  {% if summary.free_delivery_shortfall %}
+    <div class="alert alert-info small mt-3 mb-0 py-2">
+      Add {{ CURRENCY_SYMBOL }}{{ summary.free_delivery_shortfall|floatformat:2 }} more for free delivery.
+    </div>
+  {% endif %}
+
+  {# ---- coupon ---- #}
+  {% if not checkout_mode %}
+    <hr class="my-3">
+    {% if summary.coupon_code %}
+      <form method="post" action="{% url 'coupons:remove' %}"
+            hx-post="{% url 'coupons:remove' %}" hx-target="#order-summary" hx-swap="outerHTML">
+        {% csrf_token %}
+        <input type="hidden" name="next" value="cart:detail">
+        <div class="d-flex justify-content-between align-items-center">
+          <span class="small"><i class="bi bi-ticket-perforated me-1"></i>{{ summary.coupon_code }} applied</span>
+          <button class="btn btn-link btn-sm text-danger p-0 text-decoration-none" type="submit">Remove</button>
+        </div>
+      </form>
+    {% else %}
+      <form method="post" action="{% url 'coupons:apply' %}"
+            hx-post="{% url 'coupons:apply' %}" hx-target="#order-summary" hx-swap="outerHTML">
+        {% csrf_token %}
+        <input type="hidden" name="next" value="cart:detail">
+        <label for="coupon-code" class="form-label small fw-semibold">Have a coupon?</label>
+        <div class="input-group input-group-sm">
+          <input type="text" name="code" id="coupon-code" class="form-control text-uppercase"
+                 placeholder="Enter code" autocomplete="off" required>
+          <button class="btn btn-outline-primary" type="submit">Apply</button>
+        </div>
+      </form>
+      <button class="btn btn-link btn-sm p-0 mt-2 text-decoration-none" type="button"
+              hx-get="{% url 'coupons:available' %}" hx-target="#available-coupons" hx-swap="innerHTML">
+        View available offers
+      </button>
+      <div id="available-coupons"></div>
+    {% endif %}
+  {% else %}
+    {% if summary.coupon_code %}
+      <p class="small text-success mt-2 mb-0">
+        <i class="bi bi-ticket-perforated me-1"></i>Coupon {{ summary.coupon_code }} applied
+      </p>
+    {% endif %}
+  {% endif %}
+
+  {# ---- primary action ---- #}
+  {% if not checkout_mode %}
+    <a href="{% url 'orders:checkout_address' %}" class="btn btn-primary w-100 mt-3">
+      Proceed to checkout <i class="bi bi-arrow-right ms-1"></i>
+    </a>
+    <p class="small text-body-secondary text-center mt-2 mb-0">
+      <i class="bi bi-shield-lock me-1"></i>Secure checkout
+    </p>
+  {% endif %}
+</div>

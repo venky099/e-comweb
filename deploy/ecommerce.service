@@ -1,0 +1,35 @@
+# systemd unit for the Gunicorn application server.
+#
+#   sudo cp deploy/ecommerce.service /etc/systemd/system/
+#   sudo systemctl daemon-reload
+#   sudo systemctl enable --now ecommerce
+#
+[Unit]
+Description=E-commerce storefront (Gunicorn)
+Requires=ecommerce.socket
+After=network.target
+
+[Service]
+Type=notify
+User=www-data
+Group=www-data
+RuntimeDirectory=gunicorn
+WorkingDirectory=/srv/ecommerce
+Environment="DJANGO_SETTINGS_MODULE=config.settings.prod"
+EnvironmentFile=/srv/ecommerce/.env
+ExecStart=/srv/ecommerce/venv/bin/gunicorn -c deploy/gunicorn.conf.py config.wsgi:application
+ExecReload=/bin/kill -s HUP $MAINPID
+KillMode=mixed
+TimeoutStopSec=5
+Restart=always
+RestartSec=3
+PrivateTmp=true
+
+# Hardening
+NoNewPrivileges=true
+ProtectSystem=full
+ProtectHome=true
+ReadWritePaths=/srv/ecommerce/media /srv/ecommerce/staticfiles
+
+[Install]
+WantedBy=multi-user.target

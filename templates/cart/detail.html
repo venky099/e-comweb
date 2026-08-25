@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+
+{% block title %}Your cart &mdash; {{ SITE_NAME }}{% endblock %}
+
+{% block content %}
+<div class="container-xxl">
+  <div class="page-head">
+    <h1>Your cart</h1>
+    <p>{{ summary.item_count }} item{{ summary.item_count|pluralize }}</p>
+  </div>
+
+  {% if stock_problems %}
+    <div class="alert alert-warning d-flex gap-2">
+      <i class="bi bi-exclamation-triangle mt-1"></i>
+      <div>
+        <strong>Some items need attention</strong>
+        <ul class="mb-0 small">
+          {% for item, reason in stock_problems %}
+            <li>{{ item.variant.product.name }} &mdash; {{ reason }}</li>
+          {% endfor %}
+        </ul>
+      </div>
+    </div>
+  {% endif %}
+
+  <div id="cart-container">
+    {% include "cart/partials/cart_body.html" %}
+  </div>
+</div>
+{% endblock %}

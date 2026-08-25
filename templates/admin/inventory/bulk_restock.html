@@ -1,0 +1,76 @@
+{% extends "admin/base_site.html" %}
+{% load i18n admin_urls %}
+
+{% block breadcrumbs %}
+  <div class="breadcrumbs">
+    <a href="{% url 'admin:index' %}">{% translate 'Home' %}</a>
+    &rsaquo; <a href="{% url 'admin:app_list' app_label=opts.app_label %}">{{ opts.app_config.verbose_name }}</a>
+    &rsaquo; <a href="{% url opts|admin_urlname:'changelist' %}">{{ opts.verbose_name_plural|capfirst }}</a>
+    &rsaquo; {% translate 'Restock' %}
+  </div>
+{% endblock %}
+
+{% block content %}
+  <h1>{% translate "Restock variants" %}</h1>
+
+  <p>
+    {% blocktranslate count counter=items|length %}
+      Adding stock to <strong>{{ counter }}</strong> variant.
+    {% plural %}
+      Adding stock to <strong>{{ counter }}</strong> variants.
+    {% endblocktranslate %}
+    {% translate "Each change is recorded in the stock movement log." %}
+  </p>
+
+  <form method="post">
+    {% csrf_token %}
+
+    {% for item in items %}
+      <input type="hidden" name="{{ action_checkbox_name }}" value="{{ item.pk }}">
+    {% endfor %}
+    <input type="hidden" name="action" value="bulk_restock">
+
+    <fieldset class="module aligned">
+      {% for field in form %}
+        <div class="form-row">
+          <div>
+            <label for="{{ field.id_for_label }}"{% if field.field.required %} class="required"{% endif %}>
+              {{ field.label }}:
+            </label>
+            {{ field }}
+            {% if field.errors %}<ul class="errorlist">{% for error in field.errors %}<li>{{ error }}</li>{% endfor %}</ul>{% endif %}
+          </div>
+        </div>
+      {% endfor %}
+    </fieldset>
+
+    <div class="module">
+      <h2>{% translate "Selected variants" %}</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>{% translate "SKU" %}</th>
+            <th>{% translate "Product" %}</th>
+            <th>{% translate "Available" %}</th>
+            <th>{% translate "Reserved" %}</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for item in items %}
+            <tr>
+              <td>{{ item.variant.sku }}</td>
+              <td>{{ item.variant.product.name }} &mdash; {{ item.variant.label }}</td>
+              <td>{{ item.quantity_available }}</td>
+              <td>{{ item.quantity_reserved }}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <div class="submit-row">
+      <input type="submit" name="apply" value="{% translate 'Add stock' %}" class="default">
+      <a href="{% url opts|admin_urlname:'changelist' %}" class="button cancel-link">{% translate "Cancel" %}</a>
+    </div>
+  </form>
+{% endblock %}

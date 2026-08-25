@@ -1,0 +1,9 @@
+{% comment %}Renders a 0-5 star display. Expects `rating` and optional `count`.{% endcomment %}
+<span class="rating-stars" title="{{ rating|floatformat:1 }} out of 5">
+  {% for i in "12345" %}
+    {% if forloop.counter <= rating %}<i class="bi bi-star-fill"></i>
+    {% elif forloop.counter|add:"-0.5" <= rating %}<i class="bi bi-star-half"></i>
+    {% else %}<i class="bi bi-star"></i>{% endif %}
+  {% endfor %}
+  {% if count is not None %}<span class="text-body-secondary small ms-1">({{ count }})</span>{% endif %}
+</span>

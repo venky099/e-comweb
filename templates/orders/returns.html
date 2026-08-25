@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+{% block title %}Returns &amp; refunds &mdash; {{ SITE_NAME }}{% endblock %}
+
+{% block content %}
+<div class="container-xxl">
+  <div class="page-head">
+    <h1>Returns &amp; refunds</h1>
+    <p>{{ paginator.count }} request{{ paginator.count|pluralize }}</p>
+  </div>
+
+  {% if returns %}
+    <div class="bg-body border rounded-3 overflow-hidden">
+      <div class="table-responsive">
+        <table class="table align-middle mb-0">
+          <thead class="table-light">
+            <tr>
+              <th>Raised</th>
+              <th>Order</th>
+              <th>Item</th>
+              <th class="text-center">Qty</th>
+              <th>Reason</th>
+              <th class="text-end">Refund</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for return_request in returns %}
+              <tr>
+                <td class="small text-body-secondary">{{ return_request.created_at|date:"d M Y" }}</td>
+                <td class="small">
+                  <a href="{% url 'orders:detail' return_request.order.order_number %}" class="text-decoration-none">
+                    {{ return_request.order.order_number }}
+                  </a>
+                </td>
+                <td class="small">{{ return_request.order_item.display_title|truncatechars:44 }}</td>
+                <td class="text-center small">{{ return_request.quantity }}</td>
+                <td class="small">{{ return_request.get_reason_display }}</td>
+                <td class="text-end small fw-semibold">
+                  {{ CURRENCY_SYMBOL }}{{ return_request.refund_amount|floatformat:2 }}
+                </td>
+                <td>
+                  <span class="badge bg-{{ return_request.status_badge }}">
+                    {{ return_request.get_status_display }}
+                  </span>
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+    {% include "partials/pagination.html" %}
+  {% else %}
+    <div class="empty-state">
+      <i class="bi bi-arrow-return-left"></i>
+      <h3>No return requests</h3>
+      <p>You have not raised any returns. Delivered orders can be returned within {{ RETURN_WINDOW_DAYS }} days.</p>
+      <a href="{% url 'orders:list' %}" class="btn btn-primary">View my orders</a>
+    </div>
+  {% endif %}
+</div>
+{% endblock %}

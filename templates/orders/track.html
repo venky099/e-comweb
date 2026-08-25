@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+{% block title %}Track order {{ order.order_number }}{% endblock %}
+
+{% block content %}
+<div class="container-xxl">
+  <div class="page-head">
+    <h1>Track order {{ order.order_number }}</h1>
+    <p>Placed {{ order.placed_at|date:"d M Y, H:i" }}</p>
+  </div>
+
+  <div class="row g-4">
+    <div class="col-lg-8">
+      <div class="bg-body border rounded-3 p-3 p-md-4 mb-3">
+        <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+          <span class="badge bg-{{ order.status_badge }} fs-6">{{ order.get_status_display }}</span>
+          {% if order.estimated_delivery and order.is_open %}
+            <span class="small text-body-secondary">
+              Estimated delivery <strong>{{ order.estimated_delivery|date:"D, d M Y" }}</strong>
+            </span>
+          {% endif %}
+        </div>
+
+        {% if order.status_index >= 0 %}
+          <div class="tracker">
+            {% for step in tracking_steps %}
+              <div class="tracker-step {% if step.done %}is-done{% endif %} {% if step.active %}is-active{% endif %}">
+                <span class="tracker-dot">
+                  {% if step.done and not step.active %}<i class="bi bi-check"></i>{% else %}{{ forloop.counter }}{% endif %}
+                </span>
+                <div>{{ step.label }}</div>
+                {% if step.timestamp %}
+                  <div class="text-body-secondary" style="font-size:.7rem">{{ step.timestamp|date:"d M, H:i" }}</div>
+                {% endif %}
+              </div>
+            {% endfor %}
+          </div>
+        {% endif %}
+
+        {% if order.tracking_number %}
+          <div class="alert alert-info mb-0 py-2 small">
+            <i class="bi bi-truck me-1"></i>
+            {% if order.courier_name %}{{ order.courier_name }} &middot; {% endif %}
+            Tracking number <strong>{{ order.tracking_number }}</strong>
+          </div>
+        {% endif %}
+      </div>
+
+      <div class="bg-body border rounded-3 p-3 p-md-4">
+        <h2 class="h6 mb-3">Progress history</h2>
+        <ul class="timeline">
+          {% for entry in timeline %}
+            <li>
+              <div class="fw-semibold small">{{ entry.get_status_display }}</div>
+              <div class="small text-body-secondary">
+                {{ entry.created_at|date:"d M Y, H:i" }}{% if entry.note %} &middot; {{ entry.note }}{% endif %}
+              </div>
+            </li>
+          {% endfor %}
+        </ul>
+      </div>
+    </div>
+
+    <div class="col-lg-4">
+      <div class="summary-card">
+        <h2 class="h6 mb-2">Delivering to</h2>
+        <p class="small mb-1"><strong>{{ order.shipping_full_name }}</strong></p>
+        <p class="small text-body-secondary">
+          {% for line in order.shipping_address_lines %}{{ line }}<br>{% endfor %}
+        </p>
+        <hr>
+        <div class="summary-row total">
+          <span>Order total</span><span>{{ CURRENCY_SYMBOL }}{{ order.total_amount|floatformat:2 }}</span>
+        </div>
+        <a href="{% url 'orders:detail' order.order_number %}" class="btn btn-outline-primary w-100 mt-3">
+          View full order details
+        </a>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,122 @@
+{% comment %}
+Cart contents + order summary. Swapped wholesale by HTMX after any quantity
+change so the totals shown are always the ones the server just computed.
+{% endcomment %}
+{% if items %}
+  <div class="row g-4">
+
+    <div class="col-lg-8">
+      <div class="bg-body border rounded-3 p-3 p-md-4">
+
+        <div class="d-flex justify-content-between align-items-center mb-2">
+          <h2 class="h6 mb-0">{{ summary.item_count }} item{{ summary.item_count|pluralize }}</h2>
+          <form method="post" action="{% url 'cart:clear' %}"
+                hx-post="{% url 'cart:clear' %}" hx-target="#cart-container" hx-swap="innerHTML">
+            {% csrf_token %}
+            <button class="btn btn-link btn-sm text-danger text-decoration-none p-0" type="submit">
+              <i class="bi bi-trash me-1"></i>Clear cart
+            </button>
+          </form>
+        </div>
+
+        {% for item in items %}
+          <div class="cart-line">
+            <div class="cart-line-media">
+              <a href="{{ item.variant.product.get_absolute_url }}">
+                {% if item.variant.image %}
+                  <img src="{{ item.variant.image.url }}" alt="{{ item.variant.product.name }}">
+                {% else %}
+                  {% with image=item.variant.product.primary_image %}
+                    {% if image %}
+                      <img src="{{ image.image.url }}" alt="{{ item.variant.product.name }}">
+                    {% else %}
+                      <span class="placeholder-media d-block" style="width:96px;height:96px;border-radius:10px"></span>
+                    {% endif %}
+                  {% endwith %}
+                {% endif %}
+              </a>
+            </div>
+
+            <div class="cart-line-info">
+              <a href="{{ item.variant.product.get_absolute_url }}" class="fw-semibold text-decoration-none d-block">
+                {{ item.variant.product.name }}
+              </a>
+              {% if item.variant.label != "Default" %}
+                <p class="small text-body-secondary mb-1">{{ item.variant.label }}</p>
+              {% endif %}
+              <p class="small mb-2">
+                <span class="fw-semibold">{{ CURRENCY_SYMBOL }}{{ item.unit_price|floatformat:2 }}</span>
+                {% if item.line_savings %}
+                  <span class="price-was ms-1">{{ CURRENCY_SYMBOL }}{{ item.unit_mrp|floatformat:2 }}</span>
+                {% endif %}
+                <span class="text-body-secondary ms-1">each</span>
+              </p>
+
+              {% if item.has_stock_issue %}
+                <p class="small text-danger mb-2">
+                  <i class="bi bi-exclamation-circle me-1"></i>
+                  Only {{ item.available_quantity }} available
+                </p>
+              {% elif item.variant.is_low_stock %}
+                <p class="small text-warning mb-2">
+                  <i class="bi bi-exclamation-triangle me-1"></i>
+                  Only {{ item.available_quantity }} left in stock
+                </p>
+              {% endif %}
+
+              <div class="d-flex flex-wrap align-items-center gap-3">
+                <div class="qty-stepper">
+                  <form method="post" action="{% url 'cart:decrement' item.pk %}" class="d-inline"
+                        hx-post="{% url 'cart:decrement' item.pk %}" hx-target="#cart-container" hx-swap="innerHTML">
+                    {% csrf_token %}
+                    <button type="submit" aria-label="Decrease quantity">&minus;</button>
+                  </form>
+                  <span class="qty-value">{{ item.quantity }}</span>
+                  <form method="post" action="{% url 'cart:increment' item.pk %}" class="d-inline"
+                        hx-post="{% url 'cart:increment' item.pk %}" hx-target="#cart-container" hx-swap="innerHTML">
+                    {% csrf_token %}
+                    <button type="submit" aria-label="Increase quantity"
+                            {% if item.quantity >= item.max_selectable %}disabled{% endif %}>+</button>
+                  </form>
+                </div>
+
+                <form method="post" action="{% url 'cart:remove' item.pk %}"
+                      hx-post="{% url 'cart:remove' item.pk %}" hx-target="#cart-container" hx-swap="innerHTML">
+                  {% csrf_token %}
+                  <button class="btn btn-link btn-sm text-danger text-decoration-none p-0" type="submit">
+                    <i class="bi bi-trash me-1"></i>Remove
+                  </button>
+                </form>
+              </div>
+            </div>
+
+            <div class="cart-line-total text-end">
+              <div class="fw-bold">{{ CURRENCY_SYMBOL }}{{ item.line_total|floatformat:2 }}</div>
+              {% if item.line_savings %}
+                <div class="small text-success">Save {{ CURRENCY_SYMBOL }}{{ item.line_savings|floatformat:2 }}</div>
+              {% endif %}
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+
+      <div class="d-flex justify-content-between mt-3">
+        <a href="{% url 'catalog:product_list' %}" class="btn btn-outline-secondary">
+          <i class="bi bi-arrow-left me-1"></i>Continue shopping
+        </a>
+      </div>
+    </div>
+
+    <div class="col-lg-4">
+      {% include "cart/partials/order_summary.html" %}
+    </div>
+  </div>
+
+{% else %}
+  <div class="empty-state">
+    <i class="bi bi-bag"></i>
+    <h3>Your cart is empty</h3>
+    <p>Browse the catalog and add something you like &mdash; your cart is saved while you shop.</p>
+    <a href="{% url 'catalog:product_list' %}" class="btn btn-primary">Start shopping</a>
+  </div>
+{% endif %}

@@ -1,0 +1,97 @@
+{% extends "base.html" %}
+
+{% block title %}My reviews &mdash; {{ SITE_NAME }}{% endblock %}
+
+{% block content %}
+<div class="container-xxl">
+  <div class="page-head">
+    <h1>My reviews</h1>
+    <p>{{ paginator.count }} review{{ paginator.count|pluralize }} written</p>
+  </div>
+
+  {# ---- awaiting review ---- #}
+  {% if pending %}
+    <div class="panel mb-4">
+      <div class="panel-head"><h3>Awaiting your review</h3></div>
+      <div class="panel-body">
+        <div class="row g-3">
+          {% for item in pending %}
+            <div class="col-md-6">
+              <div class="d-flex gap-3 align-items-center border rounded p-2">
+                {% if item.image_url %}
+                  <img src="{{ item.image_url }}" alt="" style="width:56px;height:56px;object-fit:cover;border-radius:8px">
+                {% else %}
+                  <span class="placeholder-media" style="width:56px;height:56px;border-radius:8px"></span>
+                {% endif %}
+                <div class="flex-grow-1 small">
+                  <div class="fw-semibold">{{ item.product_name|truncatechars:40 }}</div>
+                  <div class="text-body-secondary">Delivered {{ item.order.delivered_at|date:"d M Y" }}</div>
+                </div>
+                <a href="{% url 'reviews:write' item.product.slug %}" class="btn btn-sm btn-outline-primary">Review</a>
+              </div>
+            </div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+  {% endif %}
+
+  {# ---- written reviews ---- #}
+  {% if reviews %}
+    <div class="row g-3">
+      {% for review in reviews %}
+        <div class="col-12">
+          <div class="bg-body border rounded-3 p-3">
+            <div class="d-flex gap-3">
+              {% with image=review.product.primary_image %}
+                {% if image %}
+                  <img src="{{ image.image.url }}" alt="" style="width:64px;height:64px;object-fit:cover;border-radius:8px">
+                {% else %}
+                  <span class="placeholder-media" style="width:64px;height:64px;border-radius:8px"></span>
+                {% endif %}
+              {% endwith %}
+
+              <div class="flex-grow-1">
+                <a href="{{ review.product.get_absolute_url }}" class="fw-semibold text-decoration-none d-block">
+                  {{ review.product.name }}
+                </a>
+                <div class="rating-stars small">
+                  {% for i in "12345" %}
+                    <i class="bi {% if forloop.counter <= review.rating %}bi-star-fill{% else %}bi-star{% endif %}"></i>
+                  {% endfor %}
+                  <span class="text-body-secondary ms-1">{{ review.created_at|date:"d M Y" }}</span>
+                </div>
+                {% if review.title %}<div class="fw-semibold small mt-1">{{ review.title }}</div>{% endif %}
+                {% if review.comment %}<p class="small mb-1 mt-1">{{ review.comment|truncatechars:220 }}</p>{% endif %}
+                {% if review.helpful_count %}
+                  <p class="small text-body-secondary mb-0">
+                    <i class="bi bi-hand-thumbs-up me-1"></i>{{ review.helpful_count }} found this helpful
+                  </p>
+                {% endif %}
+              </div>
+
+              <form method="post" action="{% url 'reviews:delete' review.pk %}"
+                    onsubmit="return confirm('Delete this review?');">
+                {% csrf_token %}
+                <input type="hidden" name="next" value="{% url 'reviews:mine' %}">
+                <button class="btn btn-sm btn-outline-danger" type="submit" aria-label="Delete review">
+                  <i class="bi bi-trash"></i>
+                </button>
+              </form>
+            </div>
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+
+    {% include "partials/pagination.html" %}
+  {% elif not pending %}
+    <div class="empty-state">
+      <i class="bi bi-star"></i>
+      <h3>No reviews yet</h3>
+      <p>Once an order is delivered you can review what you bought.</p>
+      <a href="{% url 'orders:list' %}" class="btn btn-primary">View my orders</a>
+    </div>
+  {% endif %}
+</div>
+{% endblock %}

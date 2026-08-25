@@ -1,0 +1,235 @@
+{% extends "base.html" %}
+
+{% block title %}Order {{ order.order_number }} &mdash; {{ SITE_NAME }}{% endblock %}
+
+{% block content %}
+<div class="container-xxl">
+
+  <div class="page-head d-flex flex-wrap justify-content-between align-items-end gap-2">
+    <div>
+      <h1>Order {{ order.order_number }}</h1>
+      <p>Placed {{ order.placed_at|date:"d M Y, H:i" }}</p>
+    </div>
+    <div class="d-flex align-items-center gap-2">
+      <span class="badge bg-{{ order.status_badge }} fs-6">{{ order.get_status_display }}</span>
+      <a href="{% url 'orders:list' %}" class="btn btn-outline-secondary btn-sm">
+        <i class="bi bi-arrow-left me-1"></i>All orders
+      </a>
+    </div>
+  </div>
+
+  {# ---- tracker ---- #}
+  {% if order.status_index >= 0 %}
+    <div class="bg-body border rounded-3 p-3 p-md-4 mb-4">
+      <div class="tracker">
+        {% for step in tracking_steps %}
+          <div class="tracker-step {% if step.done %}is-done{% endif %} {% if step.active %}is-active{% endif %}">
+            <span class="tracker-dot">
+              {% if step.done and not step.active %}<i class="bi bi-check"></i>{% else %}{{ forloop.counter }}{% endif %}
+            </span>
+            <div>{{ step.label }}</div>
+            {% if step.timestamp %}<div class="text-body-secondary" style="font-size:.7rem">{{ step.timestamp|date:"d M" }}</div>{% endif %}
+          </div>
+        {% endfor %}
+      </div>
+
+      {% if order.tracking_number %}
+        <div class="alert alert-info d-flex flex-wrap gap-2 align-items-center mb-0 py-2">
+          <i class="bi bi-truck"></i>
+          <span class="small">
+            {% if order.courier_name %}{{ order.courier_name }} &middot; {% endif %}
+            Tracking number <strong>{{ order.tracking_number }}</strong>
+          </span>
+        </div>
+      {% elif order.estimated_delivery and order.is_open %}
+        <p class="small text-body-secondary text-center mb-0">
+          Estimated delivery by <strong>{{ order.estimated_delivery|date:"D, d M Y" }}</strong>
+        </p>
+      {% endif %}
+    </div>
+  {% elif order.status == 'cancelled' %}
+    <div class="alert alert-danger">
+      <strong>This order was cancelled</strong>
+      {% if order.cancel_reason %}<br><span class="small">{{ order.cancel_reason }}</span>{% endif %}
+      {% if order.payment_status == 'refund_pending' %}
+        <br><span class="small">A refund of {{ CURRENCY_SYMBOL }}{{ order.total_amount|floatformat:2 }} is being processed.</span>
+      {% endif %}
+    </div>
+  {% endif %}
+
+  <div class="row g-4">
+
+    {# ---- items ---- #}
+    <div class="col-lg-8">
+      <div class="bg-body border rounded-3 p-3 p-md-4 mb-3">
+        <h2 class="h6 mb-3">Items in this order</h2>
+
+        {% for item in order.items.all %}
+          <div class="d-flex gap-3 align-items-start py-3 border-bottom">
+            {% if item.image_url %}
+              <img src="{{ item.image_url }}" alt="" style="width:72px;height:72px;object-fit:cover;border-radius:8px">
+            {% else %}
+              <span class="placeholder-media" style="width:72px;height:72px;border-radius:8px"></span>
+            {% endif %}
+
+            <div class="flex-grow-1">
+              <div class="fw-semibold">
+                {% if item.product %}
+                  <a href="{{ item.product.get_absolute_url }}" class="text-decoration-none text-body">{{ item.product_name }}</a>
+                {% else %}{{ item.product_name }}{% endif %}
+              </div>
+              <div class="small text-body-secondary">
+                {% if item.variant_label %}{{ item.variant_label }} &middot; {% endif %}
+                SKU {{ item.sku }} &middot; Qty {{ item.quantity }}
+              </div>
+              {% if item.status != 'active' %}
+                <span class="badge bg-warning-subtle text-warning mt-1">{{ item.get_status_display }}</span>
+              {% endif %}
+
+              <div class="d-flex flex-wrap gap-2 mt-2">
+                {% if order.status == 'delivered' and item.product and not item.is_reviewed %}
+                  <a href="{% url 'reviews:write' item.product.slug %}" class="btn btn-sm btn-outline-primary">
+                    <i class="bi bi-star me-1"></i>Write a review
+                  </a>
+                {% endif %}
+                {% if item in returnable_items %}
+                  <a href="{% url 'orders:request_return' order.order_number item.pk %}" class="btn btn-sm btn-outline-secondary">
+                    <i class="bi bi-arrow-return-left me-1"></i>Return this item
+                  </a>
+                {% endif %}
+              </div>
+            </div>
+
+            <div class="text-end">
+              <div class="fw-bold">{{ CURRENCY_SYMBOL }}{{ item.line_total|floatformat:2 }}</div>
+              <div class="small text-body-secondary">{{ CURRENCY_SYMBOL }}{{ item.unit_price|floatformat:2 }} each</div>
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+
+      {# ---- returns raised on this order ---- #}
+      {% if order.return_requests.all %}
+        <div class="bg-body border rounded-3 p-3 p-md-4 mb-3">
+          <h2 class="h6 mb-3">Return requests</h2>
+          {% for return_request in order.return_requests.all %}
+            <div class="d-flex justify-content-between align-items-center py-2 border-bottom">
+              <div class="small">
+                <strong>{{ return_request.order_item.display_title }}</strong><br>
+                <span class="text-body-secondary">
+                  Qty {{ return_request.quantity }} &middot; {{ return_request.get_reason_display }}
+                  &middot; raised {{ return_request.created_at|date:"d M Y" }}
+                </span>
+              </div>
+              <div class="text-end">
+                <span class="badge bg-{{ return_request.status_badge }}">{{ return_request.get_status_display }}</span>
+                <div class="small text-body-secondary mt-1">
+                  Refund {{ CURRENCY_SYMBOL }}{{ return_request.refund_amount|floatformat:2 }}
+                </div>
+              </div>
+            </div>
+          {% endfor %}
+        </div>
+      {% endif %}
+
+      {# ---- timeline ---- #}
+      <div class="bg-body border rounded-3 p-3 p-md-4">
+        <h2 class="h6 mb-3">Order timeline</h2>
+        <ul class="timeline">
+          {% for entry in timeline %}
+            <li>
+              <div class="fw-semibold small">{{ entry.get_status_display }}</div>
+              <div class="small text-body-secondary">
+                {{ entry.created_at|date:"d M Y, H:i" }}{% if entry.note %} &middot; {{ entry.note }}{% endif %}
+              </div>
+            </li>
+          {% endfor %}
+        </ul>
+      </div>
+    </div>
+
+    {# ---- side ---- #}
+    <div class="col-lg-4">
+      <div class="summary-card mb-3">
+        <h2 class="h6 mb-3">Payment summary</h2>
+        <div class="summary-row"><span>Subtotal</span><span>{{ CURRENCY_SYMBOL }}{{ order.subtotal|floatformat:2 }}</span></div>
+        {% if order.product_discount %}
+          <div class="summary-row"><span>Product discount</span>
+            <span class="text-success">&minus; {{ CURRENCY_SYMBOL }}{{ order.product_discount|floatformat:2 }}</span></div>
+        {% endif %}
+        {% if order.coupon_discount %}
+          <div class="summary-row"><span>Coupon {{ order.coupon_code }}</span>
+            <span class="text-success">&minus; {{ CURRENCY_SYMBOL }}{{ order.coupon_discount|floatformat:2 }}</span></div>
+        {% endif %}
+        <div class="summary-row"><span>Delivery</span>
+          {% if order.delivery_charge %}<span>{{ CURRENCY_SYMBOL }}{{ order.delivery_charge|floatformat:2 }}</span>
+          {% else %}<span class="text-success">FREE</span>{% endif %}</div>
+        {% if order.tax_amount %}
+          <div class="summary-row"><span>Tax</span><span>{{ CURRENCY_SYMBOL }}{{ order.tax_amount|floatformat:2 }}</span></div>
+        {% endif %}
+        <div class="summary-row total"><span>Total</span><span>{{ CURRENCY_SYMBOL }}{{ order.total_amount|floatformat:2 }}</span></div>
+        {% if order.refunded_amount %}
+          <div class="summary-row"><span>Refunded</span>
+            <span class="text-success">{{ CURRENCY_SYMBOL }}{{ order.refunded_amount|floatformat:2 }}</span></div>
+        {% endif %}
+
+        <hr>
+        <p class="small mb-1"><strong>{{ order.get_payment_method_display }}</strong></p>
+        <span class="badge bg-{% if order.is_paid %}success{% else %}warning{% endif %}-subtle
+                     text-{% if order.is_paid %}success{% else %}warning{% endif %}">
+          {{ order.get_payment_status_display }}
+        </span>
+
+        {% if order.payment_status == 'pending' and not order.is_cod and order.is_open %}
+          <a href="{% url 'payments:start' order.order_number %}" class="btn btn-primary w-100 mt-3">
+            <i class="bi bi-credit-card me-1"></i>Complete payment
+          </a>
+        {% endif %}
+      </div>
+
+      <div class="summary-card mb-3">
+        <h2 class="h6 mb-2">Delivery address</h2>
+        <p class="small mb-1"><strong>{{ order.shipping_full_name }}</strong></p>
+        <p class="small text-body-secondary mb-1">
+          {% for line in order.shipping_address_lines %}{{ line }}<br>{% endfor %}
+        </p>
+        <p class="small text-body-secondary mb-0"><i class="bi bi-telephone me-1"></i>{{ order.shipping_phone }}</p>
+        {% if order.customer_note %}
+          <hr><p class="small mb-0"><strong>Your note:</strong> {{ order.customer_note }}</p>
+        {% endif %}
+      </div>
+
+      {# ---- cancel ---- #}
+      {% if order.can_be_cancelled %}
+        <div class="summary-card" id="cancel">
+          <h2 class="h6 mb-2">Cancel this order</h2>
+          <p class="small text-body-secondary">
+            You can cancel free of charge while the order is unshipped.
+          </p>
+          <form method="post" action="{% url 'orders:cancel' order.order_number %}"
+                onsubmit="return confirm('Cancel order {{ order.order_number }}? This cannot be undone.');">
+            {% csrf_token %}
+            <select name="reason" class="form-select form-select-sm mb-2" required>
+              <option value="">Select a reason</option>
+              {% for value, label in cancel_form.fields.reason.choices %}
+                <option value="{{ value }}">{{ label }}</option>
+              {% endfor %}
+            </select>
+            <textarea name="comment" class="form-control form-control-sm mb-2" rows="2"
+                      placeholder="Anything else? (optional)"></textarea>
+            <button class="btn btn-outline-danger btn-sm w-100" type="submit">Cancel order</button>
+          </form>
+        </div>
+      {% elif order.can_be_returned %}
+        <div class="summary-card">
+          <h2 class="h6 mb-2">Need to return something?</h2>
+          <p class="small text-body-secondary mb-0">
+            Your return window is open until <strong>{{ order.return_deadline|date:"d M Y" }}</strong>.
+            Use the &ldquo;Return this item&rdquo; button next to any item above.
+          </p>
+        </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

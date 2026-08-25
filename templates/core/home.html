@@ -1,0 +1,267 @@
+{% extends "base.html" %}
+{% load humanize %}
+
+{% block title %}{{ SITE_NAME }} &mdash; {{ SITE_TAGLINE }}{% endblock %}
+
+{% block content %}
+
+{# ================= HERO ================= #}
+<section class="hero-section">
+  <div class="container-xxl">
+    {% if hero_banners %}
+      <div id="heroCarousel" class="carousel slide rounded-4 overflow-hidden" data-bs-ride="carousel">
+        {% if hero_banners|length > 1 %}
+          <div class="carousel-indicators">
+            {% for banner in hero_banners %}
+              <button type="button" data-bs-target="#heroCarousel" data-bs-slide-to="{{ forloop.counter0 }}"
+                      class="{% if forloop.first %}active{% endif %}" aria-label="Slide {{ forloop.counter }}"></button>
+            {% endfor %}
+          </div>
+        {% endif %}
+        <div class="carousel-inner">
+          {% for banner in hero_banners %}
+            <div class="carousel-item {% if forloop.first %}active{% endif %}">
+              <a href="{{ banner.link_url|default:'#' }}" class="hero-slide"
+                 {% if banner.background_color %}style="background:{{ banner.background_color }}"{% endif %}>
+                {% if banner.image %}
+                  <img src="{{ banner.image.url }}" alt="{{ banner.title }}" class="hero-image">
+                {% else %}
+                  <div class="hero-image placeholder-media"></div>
+                {% endif %}
+                <div class="hero-overlay">
+                  <div class="hero-copy">
+                    <h2>{{ banner.title }}</h2>
+                    {% if banner.subtitle %}<p>{{ banner.subtitle }}</p>{% endif %}
+                    {% if banner.cta_label %}<span class="btn btn-light btn-lg">{{ banner.cta_label }}</span>{% endif %}
+                  </div>
+                </div>
+              </a>
+            </div>
+          {% endfor %}
+        </div>
+        {% if hero_banners|length > 1 %}
+          <button class="carousel-control-prev" type="button" data-bs-target="#heroCarousel" data-bs-slide="prev">
+            <span class="carousel-control-prev-icon"></span><span class="visually-hidden">Previous</span>
+          </button>
+          <button class="carousel-control-next" type="button" data-bs-target="#heroCarousel" data-bs-slide="next">
+            <span class="carousel-control-next-icon"></span><span class="visually-hidden">Next</span>
+          </button>
+        {% endif %}
+      </div>
+    {% else %}
+      {# No banners configured yet -- a real, useful default rather than a blank space. #}
+      <div class="hero-fallback rounded-4">
+        <div class="hero-fallback-copy">
+          <p class="eyebrow">Welcome to {{ SITE_NAME }}</p>
+          <h1>{{ SITE_TAGLINE }}</h1>
+          <p class="lead">Thousands of products, honest prices, and {{ RETURN_WINDOW_DAYS }}-day returns on everything.</p>
+          <div class="d-flex flex-wrap gap-2">
+            <a href="{% url 'catalog:product_list' %}" class="btn btn-light btn-lg">Start shopping</a>
+            <a href="{% url 'catalog:product_list' %}?availability=on_sale" class="btn btn-outline-light btn-lg">See today's deals</a>
+          </div>
+        </div>
+      </div>
+    {% endif %}
+  </div>
+</section>
+
+{# ================= VALUE PROPS ================= #}
+<section class="container-xxl">
+  <div class="value-props row g-3">
+    <div class="col-6 col-lg-3">
+      <div class="value-prop"><i class="bi bi-truck"></i>
+        <div><strong>Free delivery</strong><span>On orders over {{ CURRENCY_SYMBOL }}{{ FREE_DELIVERY_THRESHOLD }}</span></div>
+      </div>
+    </div>
+    <div class="col-6 col-lg-3">
+      <div class="value-prop"><i class="bi bi-arrow-counterclockwise"></i>
+        <div><strong>{{ RETURN_WINDOW_DAYS }}-day returns</strong><span>No-questions-asked</span></div>
+      </div>
+    </div>
+    <div class="col-6 col-lg-3">
+      <div class="value-prop"><i class="bi bi-shield-check"></i>
+        <div><strong>Secure payments</strong><span>UPI, cards, netbanking, COD</span></div>
+      </div>
+    </div>
+    <div class="col-6 col-lg-3">
+      <div class="value-prop"><i class="bi bi-headset"></i>
+        <div><strong>Real support</strong><span>{{ SUPPORT_PHONE }}</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+{# ================= CATEGORIES ================= #}
+{% if featured_categories %}
+<section class="container-xxl section-block">
+  <div class="section-head">
+    <h2>Shop by category</h2>
+    <a href="{% url 'catalog:product_list' %}" class="section-link">Browse all <i class="bi bi-arrow-right"></i></a>
+  </div>
+  <div class="category-tiles">
+    {% for category in featured_categories %}
+      <a href="{% url 'catalog:category' category.slug %}" class="category-tile">
+        {% if category.image %}
+          <img src="{{ category.image.url }}" alt="{{ category.name }}" loading="lazy">
+        {% else %}
+          <span class="category-tile-icon"><i class="bi {{ category.icon_class|default:'bi-grid' }}"></i></span>
+        {% endif %}
+        <span class="category-tile-name">{{ category.name }}</span>
+      </a>
+    {% endfor %}
+  </div>
+</section>
+{% endif %}
+
+{# ================= FLASH SALE ================= #}
+{% if flash_sale and flash_sale_items %}
+<section class="container-xxl section-block">
+  <div class="flash-sale rounded-4">
+    <div class="flash-sale-head">
+      <div>
+        <p class="eyebrow"><i class="bi bi-lightning-charge-fill"></i> Flash sale</p>
+        <h2>{{ flash_sale.name }}</h2>
+        {% if flash_sale.description %}<p class="mb-0 opacity-75">{{ flash_sale.description }}</p>{% endif %}
+      </div>
+      {% if flash_sale.seconds_remaining %}
+        <div class="countdown" data-countdown="{{ flash_sale.seconds_remaining }}">
+          <span class="countdown-label">Ends in</span>
+          <span class="countdown-clock" data-countdown-display>--:--:--</span>
+        </div>
+      {% endif %}
+    </div>
+    <div class="flash-sale-grid">
+      {% for item in flash_sale_items %}
+        <div class="flash-item">
+          <a href="{{ item.variant.product.get_absolute_url }}">
+            {% with image=item.variant.product.primary_image %}
+              {% if image %}<img src="{{ image.image.url }}" alt="{{ item.variant.product.name }}" loading="lazy">
+              {% else %}<div class="placeholder-media"><i class="bi bi-image"></i></div>{% endif %}
+            {% endwith %}
+          </a>
+          <div class="flash-item-body">
+            <h4>{{ item.variant.product.name|truncatechars:44 }}</h4>
+            <div class="product-card-price">
+              <span class="price-now">{{ CURRENCY_SYMBOL }}{{ item.sale_price|floatformat:2 }}</span>
+              <span class="price-was">{{ CURRENCY_SYMBOL }}{{ item.variant.price|floatformat:2 }}</span>
+              {% if item.discount_percent %}<span class="badge bg-danger">-{{ item.discount_percent }}%</span>{% endif %}
+            </div>
+            {% if item.quantity_limit %}
+              <div class="progress" role="progressbar" aria-valuenow="{{ item.claimed_percent }}" aria-valuemin="0" aria-valuemax="100">
+                <div class="progress-bar bg-danger" style="width: {{ item.claimed_percent }}%"></div>
+              </div>
+              <p class="small mb-0 opacity-75">{{ item.sold_count }} of {{ item.quantity_limit }} claimed</p>
+            {% endif %}
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+{% endif %}
+
+{# ================= OFFERS / COUPONS ================= #}
+{% if offers or public_coupons %}
+<section class="container-xxl section-block">
+  <div class="section-head"><h2>Offers for you</h2></div>
+  <div class="row g-3">
+    {% for offer in offers %}
+      <div class="col-md-6 col-lg-4">
+        <a href="{{ offer.link_url|default:'#' }}" class="offer-card">
+          {% if offer.badge_text %}<span class="offer-badge">{{ offer.badge_text }}</span>{% endif %}
+          <h3>{{ offer.title }}</h3>
+          {% if offer.description %}<p>{{ offer.description }}</p>{% endif %}
+          {% if offer.coupon %}
+            <span class="coupon-chip"><i class="bi bi-ticket-perforated me-1"></i>{{ offer.coupon.code }}</span>
+          {% endif %}
+        </a>
+      </div>
+    {% endfor %}
+    {% for coupon in public_coupons %}
+      <div class="col-md-6 col-lg-3">
+        <div class="coupon-card">
+          <div class="coupon-value">{{ coupon.discount_label }}</div>
+          <div class="coupon-code" data-copy="{{ coupon.code }}" role="button" tabindex="0">
+            {{ coupon.code }} <i class="bi bi-clipboard"></i>
+          </div>
+          {% if coupon.min_order_value %}
+            <p class="small text-body-secondary mb-0">On orders over {{ CURRENCY_SYMBOL }}{{ coupon.min_order_value|floatformat:0 }}</p>
+          {% endif %}
+        </div>
+      </div>
+    {% endfor %}
+  </div>
+</section>
+{% endif %}
+
+{# ================= PRODUCT RAILS ================= #}
+{% if featured_products %}
+<section class="container-xxl section-block">
+  <div class="section-head">
+    <h2>Featured products</h2>
+    <a href="{% url 'catalog:product_list' %}?sort=popularity" class="section-link">View all <i class="bi bi-arrow-right"></i></a>
+  </div>
+  <div class="product-grid">
+    {% for product in featured_products %}{% include "partials/product_card.html" %}{% endfor %}
+  </div>
+</section>
+{% endif %}
+
+{% if new_arrivals %}
+<section class="container-xxl section-block">
+  <div class="section-head">
+    <h2>New arrivals</h2>
+    <a href="{% url 'catalog:product_list' %}?sort=newest" class="section-link">View all <i class="bi bi-arrow-right"></i></a>
+  </div>
+  <div class="product-grid">
+    {% for product in new_arrivals %}{% include "partials/product_card.html" %}{% endfor %}
+  </div>
+</section>
+{% endif %}
+
+{% if best_sellers %}
+<section class="container-xxl section-block">
+  <div class="section-head">
+    <h2>Best sellers</h2>
+    <a href="{% url 'catalog:product_list' %}?sort=popularity" class="section-link">View all <i class="bi bi-arrow-right"></i></a>
+  </div>
+  <div class="product-grid">
+    {% for product in best_sellers %}{% include "partials/product_card.html" %}{% endfor %}
+  </div>
+</section>
+{% endif %}
+
+{% if not featured_products and not new_arrivals and not best_sellers %}
+  <section class="container-xxl section-block">
+    <div class="empty-state">
+      <i class="bi bi-box-seam"></i>
+      <h3>No products published yet</h3>
+      <p>Run <code>python manage.py seed_data</code> to load a demo catalog, or add products in the admin.</p>
+      {% if user.is_staff %}<a href="/admin/catalog/product/add/" class="btn btn-primary">Add a product</a>{% endif %}
+    </div>
+  </section>
+{% endif %}
+
+{# ================= TESTIMONIALS ================= #}
+{% if testimonials %}
+<section class="container-xxl section-block">
+  <div class="section-head"><h2>What customers say</h2></div>
+  <div class="testimonial-rail">
+    {% for review in testimonials %}
+      <figure class="testimonial">
+        <div class="rating-stars mb-2">
+          {% for i in "12345" %}
+            <i class="bi {% if forloop.counter <= review.rating %}bi-star-fill{% else %}bi-star{% endif %}"></i>
+          {% endfor %}
+        </div>
+        <blockquote>{{ review.comment|truncatechars:180 }}</blockquote>
+        <figcaption>
+          <strong>{{ review.author_name }}</strong>
+          <span>on {{ review.product.name|truncatechars:40 }}</span>
+        </figcaption>
+      </figure>
+    {% endfor %}
+  </div>
+</section>
+{% endif %}
+{% endblock %}

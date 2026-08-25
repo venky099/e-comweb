@@ -1,0 +1,34 @@
+{% if items %}
+  <div class="p-2" style="min-width: 300px">
+    {% for item in items %}
+      <a class="suggestion-row" href="{{ item.variant.product.get_absolute_url }}">
+        {% if item.variant.image %}
+          <img src="{{ item.variant.image.url }}" alt="">
+        {% else %}
+          {% with image=item.variant.product.primary_image %}
+            {% if image %}<img src="{{ image.image.url }}" alt="">{% endif %}
+          {% endwith %}
+        {% endif %}
+        <span class="flex-grow-1">
+          <span class="d-block small fw-semibold">{{ item.variant.product.name|truncatechars:36 }}</span>
+          <span class="d-block text-body-secondary" style="font-size:.75rem">
+            {{ item.quantity }} &times; {{ CURRENCY_SYMBOL }}{{ item.unit_price|floatformat:2 }}
+          </span>
+        </span>
+        <span class="small fw-semibold">{{ CURRENCY_SYMBOL }}{{ item.line_total|floatformat:2 }}</span>
+      </a>
+    {% endfor %}
+    <div class="d-flex justify-content-between px-3 py-2 border-top fw-semibold">
+      <span>Total</span><span>{{ CURRENCY_SYMBOL }}{{ summary.total|floatformat:2 }}</span>
+    </div>
+    <div class="px-2 pb-2 d-grid gap-2">
+      <a href="{% url 'cart:detail' %}" class="btn btn-outline-secondary btn-sm">View cart</a>
+      <a href="{% url 'orders:checkout_address' %}" class="btn btn-primary btn-sm">Checkout</a>
+    </div>
+  </div>
+{% else %}
+  <div class="p-4 text-center text-body-secondary small" style="min-width: 260px">
+    <i class="bi bi-bag d-block fs-3 mb-2"></i>
+    Your cart is empty
+  </div>
+{% endif %}

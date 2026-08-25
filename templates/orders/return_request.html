@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+{% block title %}Return {{ item.product_name }}{% endblock %}
+
+{% block content %}
+<div class="container-xxl">
+  <div class="page-head">
+    <h1>Request a return</h1>
+    <p>Order {{ order.order_number }}</p>
+  </div>
+
+  <div class="row g-4">
+    <div class="col-lg-7">
+      <div class="bg-body border rounded-3 p-3 p-md-4">
+
+        <div class="d-flex gap-3 align-items-center pb-3 mb-3 border-bottom">
+          {% if item.image_url %}
+            <img src="{{ item.image_url }}" alt="" style="width:72px;height:72px;object-fit:cover;border-radius:8px">
+          {% else %}
+            <span class="placeholder-media" style="width:72px;height:72px;border-radius:8px"></span>
+          {% endif %}
+          <div>
+            <div class="fw-semibold">{{ item.product_name }}</div>
+            <div class="small text-body-secondary">
+              {% if item.variant_label %}{{ item.variant_label }} &middot; {% endif %}
+              Qty {{ item.quantity }} &middot; {{ CURRENCY_SYMBOL }}{{ item.unit_price|floatformat:2 }} each
+            </div>
+          </div>
+        </div>
+
+        <form method="post">
+          {% csrf_token %}
+
+          {% if form.non_field_errors %}
+            <div class="alert alert-danger py-2 small">{{ form.non_field_errors.0 }}</div>
+          {% endif %}
+
+          {% for field in form %}
+            <div class="mb-3">
+              <label for="{{ field.id_for_label }}" class="form-label small fw-semibold">{{ field.label }}</label>
+              {{ field }}
+              {% if field.help_text %}<div class="form-text small">{{ field.help_text }}</div>{% endif %}
+              {% if field.errors %}<div class="text-danger small">{{ field.errors.0 }}</div>{% endif %}
+            </div>
+          {% endfor %}
+
+          <div class="alert alert-info small">
+            <i class="bi bi-info-circle me-1"></i>
+            Once approved, we will arrange a pickup. Your refund is issued to the original payment method
+            after the item reaches our warehouse.
+          </div>
+
+          <div class="d-flex gap-2">
+            <a href="{% url 'orders:detail' order.order_number %}" class="btn btn-outline-secondary">Cancel</a>
+            <button type="submit" class="btn btn-primary flex-grow-1">Submit return request</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <div class="col-lg-5">
+      <div class="summary-card">
+        <h2 class="h6 mb-2">Return policy</h2>
+        <ul class="small text-body-secondary ps-3 mb-0">
+          <li>Returns accepted within {{ RETURN_WINDOW_DAYS }} days of delivery.</li>
+          <li>Items must be unused and in their original packaging.</li>
+          <li>Refunds are processed within 5-7 business days of pickup.</li>
+          <li>Delivery charges are non-refundable unless the item was faulty.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

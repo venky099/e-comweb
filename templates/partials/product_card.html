@@ -1,0 +1,92 @@
+{% comment %}
+Product card used by every grid. Expects `product` (with images/variants
+prefetched by Product.objects.with_related()).
+{% endcomment %}
+<article class="product-card h-100">
+
+  <div class="product-card-media">
+    <a href="{{ product.get_absolute_url }}" class="d-block h-100">
+      {% with image=product.primary_image %}
+        {% if image %}
+          <img src="{{ image.image.url }}" alt="{{ image.alt_text|default:product.name }}" loading="lazy">
+        {% else %}
+          <div class="placeholder-media"><i class="bi bi-image"></i></div>
+        {% endif %}
+      {% endwith %}
+    </a>
+
+    <div class="product-card-badges">
+      {% if product.discount_percent %}
+        <span class="badge bg-danger">-{{ product.discount_percent }}%</span>
+      {% endif %}
+      {% if product.is_best_seller %}
+        <span class="badge bg-warning text-dark">Best seller</span>
+      {% endif %}
+      {% if not product.in_stock %}
+        <span class="badge bg-secondary">Out of stock</span>
+      {% endif %}
+    </div>
+
+    {% if user.is_authenticated %}
+      <form method="post" action="{% url 'wishlist:toggle' %}" class="wishlist-toggle"
+            hx-post="{% url 'wishlist:toggle' %}" hx-swap="outerHTML" hx-target="this">
+        {% csrf_token %}
+        <input type="hidden" name="product_id" value="{{ product.pk }}">
+        <button class="btn btn-light btn-sm rounded-circle shadow-sm" type="submit" aria-label="Save to wishlist">
+          <i class="bi bi-heart"></i>
+        </button>
+      </form>
+    {% else %}
+      <a href="{% url 'accounts:login' %}?next={{ product.get_absolute_url }}"
+         class="btn btn-light btn-sm rounded-circle shadow-sm wishlist-toggle" aria-label="Sign in to save">
+        <i class="bi bi-heart"></i>
+      </a>
+    {% endif %}
+  </div>
+
+  <div class="product-card-body">
+    {% if product.brand_name %}
+      <p class="product-card-brand">{{ product.brand_name }}</p>
+    {% elif product.brand %}
+      <p class="product-card-brand">{{ product.brand.name }}</p>
+    {% endif %}
+
+    <h3 class="product-card-title">
+      <a href="{{ product.get_absolute_url }}">{{ product.name }}</a>
+    </h3>
+
+    {% if product.rating_count %}
+      <div class="product-card-rating">
+        {% include "partials/rating_stars.html" with rating=product.rating_average count=product.rating_count %}
+      </div>
+    {% else %}
+      <div class="product-card-rating text-body-secondary small">No reviews yet</div>
+    {% endif %}
+
+    <div class="product-card-price">
+      <span class="price-now">{{ CURRENCY_SYMBOL }}{{ product.price|floatformat:2 }}</span>
+      {% if product.has_discount %}
+        <span class="price-was">{{ CURRENCY_SYMBOL }}{{ product.compare_at_price|floatformat:2 }}</span>
+      {% endif %}
+    </div>
+
+    {% with variant=product.default_variant %}
+      {% if variant and variant.available_quantity > 0 %}
+        {% if variant.is_low_stock %}
+          <p class="stock-note text-warning small mb-2"><i class="bi bi-exclamation-triangle me-1"></i>Only {{ variant.available_quantity }} left</p>
+        {% endif %}
+        <form method="post" action="{% url 'cart:add' %}" class="mt-auto">
+          {% csrf_token %}
+          <input type="hidden" name="variant_id" value="{{ variant.pk }}">
+          <input type="hidden" name="quantity" value="1">
+          <button class="btn btn-primary w-100 btn-sm" type="submit">
+            <i class="bi bi-bag-plus me-1"></i>Add to cart
+          </button>
+        </form>
+      {% else %}
+        <p class="stock-note text-danger small mb-2"><i class="bi bi-x-circle me-1"></i>Out of stock</p>
+        <a href="{{ product.get_absolute_url }}" class="btn btn-outline-secondary w-100 btn-sm mt-auto">View details</a>
+      {% endif %}
+    {% endwith %}
+  </div>
+</article>

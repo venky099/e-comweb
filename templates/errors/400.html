@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block title %}Bad request &mdash; {{ SITE_NAME }}{% endblock %}
+{% block content %}
+<div class="container-xxl">
+  <div class="error-page">
+    <p class="error-code">400</p>
+    <h1 class="h3 fw-bold">{{ error_title|default:"Bad request" }}</h1>
+    <p class="text-body-secondary mx-auto" style="max-width: 34rem">
+      {{ error_message|default:"We could not understand that request. Please try again." }}
+    </p>
+    <a href="{% url 'core:home' %}" class="btn btn-primary mt-3">Go to homepage</a>
+  </div>
+</div>
+{% endblock %}

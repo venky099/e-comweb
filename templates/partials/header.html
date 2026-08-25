@@ -1,0 +1,151 @@
+{% load static %}
+<header class="site-header sticky-top">
+
+  {# ---- announcement strip ---- #}
+  <div class="announcement-bar text-center py-1 small">
+    <div class="container-xxl">
+      <i class="bi bi-truck"></i>
+      Free delivery on orders over {{ CURRENCY_SYMBOL }}{{ FREE_DELIVERY_THRESHOLD }}
+      <span class="d-none d-md-inline">&nbsp;&middot;&nbsp; {{ RETURN_WINDOW_DAYS }}-day easy returns</span>
+    </div>
+  </div>
+
+  <nav class="navbar navbar-expand-lg bg-body border-bottom py-2">
+    <div class="container-xxl gap-2">
+
+      <a class="navbar-brand fw-bold d-flex align-items-center gap-2" href="{% url 'core:home' %}">
+        <span class="brand-mark">{{ SITE_NAME|slice:":1" }}</span>
+        <span class="d-none d-sm-inline">{{ SITE_NAME }}</span>
+      </a>
+
+      {# ---- search (desktop) ---- #}
+      <form class="site-search flex-grow-1 d-none d-lg-block position-relative"
+            action="{% url 'catalog:search' %}" method="get" role="search"
+            x-data="{ open: false }" @click.outside="open = false">
+        <div class="input-group">
+          <span class="input-group-text bg-body-secondary border-end-0"><i class="bi bi-search"></i></span>
+          <input type="search" name="q" class="form-control border-start-0" autocomplete="off"
+                 placeholder="Search products, brands and categories"
+                 value="{{ request.GET.q|default:'' }}"
+                 aria-label="Search products"
+                 hx-get="{% url 'catalog:search_suggestions' %}"
+                 hx-trigger="keyup changed delay:250ms, focus"
+                 hx-target="#search-suggestions"
+                 @focus="open = true" @keyup="open = true">
+          <button class="btn btn-primary px-4" type="submit">Search</button>
+        </div>
+        <div id="search-suggestions" class="search-suggestions" x-show="open" x-cloak></div>
+      </form>
+
+      <button class="navbar-toggler order-lg-last" type="button" data-bs-toggle="collapse"
+              data-bs-target="#mainNav" aria-controls="mainNav" aria-expanded="false" aria-label="Toggle navigation">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+
+      {# ---- account / wishlist / cart ---- #}
+      <div class="d-flex align-items-center gap-1 gap-md-2 ms-auto ms-lg-0">
+
+        <div class="dropdown">
+          <button class="btn btn-link nav-icon-btn dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+            <i class="bi bi-person"></i>
+            <span class="d-none d-md-inline small">
+              {% if user.is_authenticated %}{{ user.first_name|default:"Account" }}{% else %}Sign in{% endif %}
+            </span>
+          </button>
+          <ul class="dropdown-menu dropdown-menu-end shadow-sm">
+            {% if user.is_authenticated %}
+              <li class="px-3 py-2 small text-body-secondary border-bottom">
+                Signed in as<br><strong>{{ user.email }}</strong>
+              </li>
+              <li><a class="dropdown-item" href="{% url 'accounts:dashboard' %}"><i class="bi bi-speedometer2 me-2"></i>My account</a></li>
+              <li><a class="dropdown-item" href="{% url 'orders:list' %}"><i class="bi bi-box-seam me-2"></i>My orders</a></li>
+              <li><a class="dropdown-item" href="{% url 'accounts:address_list' %}"><i class="bi bi-geo-alt me-2"></i>Addresses</a></li>
+              <li><a class="dropdown-item" href="{% url 'reviews:mine' %}"><i class="bi bi-star me-2"></i>My reviews</a></li>
+              {% if user.is_staff %}
+                <li><hr class="dropdown-divider"></li>
+                <li><a class="dropdown-item" href="{% url 'dashboard:index' %}"><i class="bi bi-graph-up me-2"></i>Staff dashboard</a></li>
+                <li><a class="dropdown-item" href="/admin/"><i class="bi bi-gear me-2"></i>Django admin</a></li>
+              {% endif %}
+              <li><hr class="dropdown-divider"></li>
+              <li>
+                <form action="{% url 'accounts:logout' %}" method="post" class="px-1">
+                  {% csrf_token %}
+                  <button class="dropdown-item text-danger" type="submit"><i class="bi bi-box-arrow-right me-2"></i>Sign out</button>
+                </form>
+              </li>
+            {% else %}
+              <li class="px-3 py-2">
+                <a href="{% url 'accounts:login' %}" class="btn btn-primary btn-sm w-100 mb-2">Sign in</a>
+                <a href="{% url 'accounts:register' %}" class="btn btn-outline-secondary btn-sm w-100">Create account</a>
+              </li>
+            {% endif %}
+          </ul>
+        </div>
+
+        <a href="{% url 'wishlist:detail' %}" class="btn btn-link nav-icon-btn position-relative" aria-label="Wishlist">
+          <i class="bi bi-heart"></i>
+          <span class="d-none d-md-inline small">Wishlist</span>
+          {% if header_wishlist_count %}
+            <span class="badge rounded-pill bg-danger nav-badge">{{ header_wishlist_count }}</span>
+          {% endif %}
+        </a>
+
+        <a href="{% url 'cart:detail' %}" class="btn btn-link nav-icon-btn position-relative" id="cart-link" aria-label="Cart">
+          <i class="bi bi-bag"></i>
+          <span class="d-none d-md-inline small">Cart</span>
+          <span class="badge rounded-pill bg-primary nav-badge {% if not header_cart_count %}d-none{% endif %}"
+                id="cart-count">{{ header_cart_count }}</span>
+        </a>
+      </div>
+    </div>
+  </nav>
+
+  {# ---- category navigation ---- #}
+  <div class="collapse navbar-collapse bg-body border-bottom" id="mainNav">
+    <div class="container-xxl">
+
+      {# search (mobile) #}
+      <form class="d-lg-none py-2" action="{% url 'catalog:search' %}" method="get" role="search">
+        <div class="input-group">
+          <input type="search" name="q" class="form-control" placeholder="Search products"
+                 value="{{ request.GET.q|default:'' }}" aria-label="Search products">
+          <button class="btn btn-primary" type="submit"><i class="bi bi-search"></i></button>
+        </div>
+      </form>
+
+      <ul class="nav category-nav flex-column flex-lg-row py-1">
+        <li class="nav-item">
+          <a class="nav-link ps-0" href="{% url 'catalog:product_list' %}">
+            <i class="bi bi-grid me-1"></i>All products
+          </a>
+        </li>
+        {% for category in nav_categories %}
+          <li class="nav-item {% if category.children %}dropdown{% endif %}">
+            {% if category.children %}
+              <a class="nav-link dropdown-toggle" href="{% url 'catalog:category' category.slug %}"
+                 data-bs-toggle="dropdown" role="button" aria-expanded="false">
+                {% if category.icon_class %}<i class="bi {{ category.icon_class }} me-1"></i>{% endif %}{{ category.name }}
+              </a>
+              <ul class="dropdown-menu shadow-sm">
+                <li><a class="dropdown-item fw-semibold" href="{% url 'catalog:category' category.slug %}">All {{ category.name }}</a></li>
+                <li><hr class="dropdown-divider"></li>
+                {% for child in category.children %}
+                  <li><a class="dropdown-item" href="{% url 'catalog:category' child.slug %}">{{ child.name }}</a></li>
+                {% endfor %}
+              </ul>
+            {% else %}
+              <a class="nav-link" href="{% url 'catalog:category' category.slug %}">
+                {% if category.icon_class %}<i class="bi {{ category.icon_class }} me-1"></i>{% endif %}{{ category.name }}
+              </a>
+            {% endif %}
+          </li>
+        {% endfor %}
+        <li class="nav-item ms-lg-auto">
+          <a class="nav-link text-danger" href="{% url 'catalog:product_list' %}?availability=on_sale">
+            <i class="bi bi-tag me-1"></i>Deals
+          </a>
+        </li>
+      </ul>
+    </div>
+  </div>
+</header>

@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% block title %}Brands &mdash; {{ SITE_NAME }}{% endblock %}
+
+{% block content %}
+<div class="container-xxl">
+  <div class="page-head">
+    <h1>Brands</h1>
+    <p>{{ brands|length }} brand{{ brands|length|pluralize }} available</p>
+  </div>
+
+  {% if brands %}
+    <div class="category-tiles">
+      {% for brand in brands %}
+        <a href="{% url 'catalog:product_list' %}?brand={{ brand.slug }}" class="category-tile">
+          {% if brand.logo %}
+            <img src="{{ brand.logo.url }}" alt="{{ brand.name }}" loading="lazy">
+          {% else %}
+            <span class="category-tile-icon">{{ brand.name|slice:":1" }}</span>
+          {% endif %}
+          <span class="category-tile-name">{{ brand.name }}</span>
+          <span class="small text-body-secondary">{{ brand.product_count }} product{{ brand.product_count|pluralize }}</span>
+        </a>
+      {% endfor %}
+    </div>
+  {% else %}
+    <div class="empty-state">
+      <i class="bi bi-tags"></i>
+      <h3>No brands yet</h3>
+      <p>Brands appear here once products are assigned to them.</p>
+      <a href="{% url 'catalog:product_list' %}" class="btn btn-primary">Browse products</a>
+    </div>
+  {% endif %}
+</div>
+{% endblock %}

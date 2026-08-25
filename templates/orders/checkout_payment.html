@@ -1,0 +1,114 @@
+{% extends "base.html" %}
+
+{% block title %}Checkout &mdash; Payment{% endblock %}
+
+{% block content %}
+<div class="container-xxl">
+  <div class="page-head"><h1>Checkout</h1></div>
+
+  <div class="checkout-steps">
+    <div class="checkout-step is-done"><span class="step-num"><i class="bi bi-check"></i></span> Delivery address</div>
+    <div class="checkout-step is-active"><span class="step-num">2</span> Payment</div>
+    <div class="checkout-step"><span class="step-num">3</span> Confirmation</div>
+  </div>
+
+  <div class="row g-4">
+    <div class="col-lg-8">
+
+      {# ---- delivering to ---- #}
+      <div class="bg-body border rounded-3 p-3 p-md-4 mb-3">
+        <div class="d-flex justify-content-between align-items-start gap-2">
+          <div>
+            <h2 class="h6 mb-2">Delivering to</h2>
+            <p class="mb-1"><strong>{{ address.full_name }}</strong></p>
+            <p class="small text-body-secondary mb-1">{{ address.single_line }}</p>
+            <p class="small text-body-secondary mb-0"><i class="bi bi-telephone me-1"></i>{{ address.phone }}</p>
+          </div>
+          <a href="{% url 'orders:checkout_address' %}" class="btn btn-outline-secondary btn-sm">Change</a>
+        </div>
+      </div>
+
+      {# ---- payment ---- #}
+      <div class="bg-body border rounded-3 p-3 p-md-4">
+        <h2 class="h6 mb-3">How would you like to pay?</h2>
+
+        <form method="post" action="{% url 'orders:checkout_payment' %}" id="place-order-form">
+          {% csrf_token %}
+
+          {% if form.non_field_errors %}
+            <div class="alert alert-danger py-2 small">{{ form.non_field_errors.0 }}</div>
+          {% endif %}
+
+          {% for value, label in form.fields.payment_method.choices %}
+            <label class="payment-option">
+              <input class="form-check-input" type="radio" name="payment_method" value="{{ value }}"
+                     {% if forloop.first %}checked{% endif %}>
+              <i class="bi
+                {% if value == 'card' %}bi-credit-card
+                {% elif value == 'upi' %}bi-phone
+                {% elif value == 'netbanking' %}bi-bank
+                {% elif value == 'wallet' %}bi-wallet2
+                {% else %}bi-cash-coin{% endif %}"></i>
+              <span class="flex-grow-1">
+                <span class="d-block fw-semibold">{{ label }}</span>
+                <span class="d-block small text-body-secondary">
+                  {% if value == 'cod' %}Pay in cash when your order arrives
+                  {% else %}Secure payment via our gateway{% endif %}
+                </span>
+              </span>
+            </label>
+          {% endfor %}
+
+          {% if not cod_allowed %}
+            <p class="small text-body-secondary">
+              <i class="bi bi-info-circle me-1"></i>
+              Cash on delivery is unavailable because one or more items in your cart are prepaid-only.
+            </p>
+          {% endif %}
+
+          <div class="mb-3">
+            <label for="id_customer_note" class="form-label small fw-semibold">{{ form.customer_note.label }}</label>
+            {{ form.customer_note }}
+          </div>
+
+          <div class="form-check mb-3">
+            {{ form.terms_accepted }}
+            <label class="form-check-label small" for="{{ form.terms_accepted.id_for_label }}">
+              I agree to the <a href="{% url 'core:policy' 'terms' %}" target="_blank">Terms of Sale</a>
+              and the <a href="{% url 'core:policy' 'returns' %}" target="_blank">Return Policy</a>.
+            </label>
+            {% if form.terms_accepted.errors %}
+              <div class="text-danger small">{{ form.terms_accepted.errors.0 }}</div>
+            {% endif %}
+          </div>
+
+          <div class="d-flex flex-wrap gap-2">
+            <a href="{% url 'orders:checkout_address' %}" class="btn btn-outline-secondary">
+              <i class="bi bi-arrow-left me-1"></i>Back
+            </a>
+            <button type="submit" class="btn btn-primary flex-grow-1" id="place-order-btn">
+              <i class="bi bi-lock me-1"></i>Place order &mdash; {{ CURRENCY_SYMBOL }}{{ summary.total|floatformat:2 }}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <div class="col-lg-4">
+      {% include "orders/partials/checkout_items.html" %}
+      {% include "cart/partials/order_summary.html" with checkout_mode=True %}
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  // Guard against a double submit creating two orders.
+  document.getElementById("place-order-form").addEventListener("submit", function () {
+    var button = document.getElementById("place-order-btn");
+    button.disabled = true;
+    button.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Placing your order...';
+  });
+</script>
+{% endblock %}

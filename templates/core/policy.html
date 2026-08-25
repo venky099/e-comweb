@@ -1,0 +1,147 @@
+{% extends "base.html" %}
+
+{% block title %}{{ page_title }} &mdash; {{ SITE_NAME }}{% endblock %}
+
+{% block content %}
+<div class="container-xxl">
+  <div class="page-head">
+    <h1>{{ page_title }}</h1>
+    <p>Last updated {% now "F Y" %}</p>
+  </div>
+
+  <div class="row g-4">
+    <div class="col-lg-3">
+      <div class="list-group">
+        <a href="{% url 'core:policy' 'shipping' %}"
+           class="list-group-item list-group-item-action {% if policy_slug == 'shipping' %}active{% endif %}">Shipping</a>
+        <a href="{% url 'core:policy' 'returns' %}"
+           class="list-group-item list-group-item-action {% if policy_slug == 'returns' %}active{% endif %}">Returns &amp; refunds</a>
+        <a href="{% url 'core:policy' 'privacy' %}"
+           class="list-group-item list-group-item-action {% if policy_slug == 'privacy' %}active{% endif %}">Privacy</a>
+        <a href="{% url 'core:policy' 'terms' %}"
+           class="list-group-item list-group-item-action {% if policy_slug == 'terms' %}active{% endif %}">Terms &amp; conditions</a>
+      </div>
+    </div>
+
+    <div class="col-lg-9">
+      <div class="bg-body border rounded-3 p-3 p-md-4">
+
+        {% if policy_slug == "shipping" %}
+          <h2 class="h5">Delivery charges</h2>
+          <p>
+            Delivery is free on orders over {{ CURRENCY_SYMBOL }}{{ FREE_DELIVERY_THRESHOLD }} (calculated after
+            discounts). Below that threshold a flat delivery charge of
+            {{ CURRENCY_SYMBOL }}{{ DELIVERY_CHARGE }} applies. The exact charge is always shown in your cart
+            before you pay.
+          </p>
+          <h2 class="h5 mt-4">Delivery times</h2>
+          <p>
+            Orders are typically dispatched within 1&ndash;2 working days and delivered within 3&ndash;5
+            working days. An estimated delivery date is shown on your order confirmation, and every
+            status change appears on the order tracking page.
+          </p>
+          <h2 class="h5 mt-4">Tracking</h2>
+          <p>
+            Once dispatched, your order page shows the courier and tracking number. You can reach it from
+            <a href="{% url 'orders:list' %}">My orders</a> at any time.
+          </p>
+
+        {% elif policy_slug == "returns" %}
+          <h2 class="h5">Return window</h2>
+          <p>
+            Most items can be returned within <strong>{{ RETURN_WINDOW_DAYS }} days of delivery</strong>.
+            Products marked non-returnable on the product page are excluded; this is shown before you buy.
+          </p>
+          <h2 class="h5 mt-4">Condition</h2>
+          <p>
+            Items must be unused, in their original packaging, and with all tags and accessories included.
+            We may refuse a return that arrives outside this condition.
+          </p>
+          <h2 class="h5 mt-4">How to return</h2>
+          <ol>
+            <li>Open the order in <a href="{% url 'orders:list' %}">My orders</a>.</li>
+            <li>Choose <em>Return this item</em> next to the item, and pick a reason.</li>
+            <li>We review the request and arrange a pickup.</li>
+            <li>Your refund is issued once the item reaches our warehouse.</li>
+          </ol>
+          <h2 class="h5 mt-4">Refunds</h2>
+          <p>
+            Refunds go back to the original payment method within 5&ndash;7 business days of the item being
+            received. Delivery charges are refunded only when the item was faulty or incorrectly sent.
+            For cash-on-delivery orders we collect your bank details for the refund.
+          </p>
+          <h2 class="h5 mt-4">Cancellations</h2>
+          <p>
+            Orders can be cancelled free of charge within {{ ORDER_CANCEL_WINDOW_HOURS }} hours while they
+            remain unshipped. Any payment already taken is refunded in full.
+          </p>
+
+        {% elif policy_slug == "privacy" %}
+          <h2 class="h5">What we collect</h2>
+          <p>
+            We collect your name, email address, phone number and delivery addresses to fulfil your orders,
+            plus your order and browsing history to run the store.
+          </p>
+          <h2 class="h5 mt-4">Payment data</h2>
+          <p>
+            We never see or store your card number, CVV or UPI PIN. Payments are processed by our payment
+            gateway; we retain only a transaction reference and the payment status.
+          </p>
+          <h2 class="h5 mt-4">How we use it</h2>
+          <ul>
+            <li>Processing, delivering and supporting your orders.</li>
+            <li>Sending transactional emails such as order confirmations.</li>
+            <li>Marketing emails, only if you opted in &mdash; you can turn these off in your profile.</li>
+          </ul>
+          <h2 class="h5 mt-4">Your rights</h2>
+          <p>
+            You can view and edit your personal details in
+            <a href="{% url 'accounts:profile' %}">profile settings</a>, and request deletion of your account
+            by emailing <a href="mailto:{{ SUPPORT_EMAIL }}">{{ SUPPORT_EMAIL }}</a>. Order records are kept
+            as required for tax and accounting purposes.
+          </p>
+          <h2 class="h5 mt-4">Cookies</h2>
+          <p>
+            We use cookies for session management (keeping you signed in and keeping your cart) and for
+            CSRF protection. These are required for the site to function.
+          </p>
+
+        {% else %}
+          <h2 class="h5">Using this store</h2>
+          <p>
+            By placing an order you confirm the details you provide are accurate and that you are able to
+            enter into a contract of sale.
+          </p>
+          <h2 class="h5 mt-4">Pricing and availability</h2>
+          <p>
+            All prices are in {{ DEFAULT_CURRENCY|default:"INR" }} and include applicable taxes unless
+            stated otherwise. Prices, discounts and stock are verified on our servers when you place an
+            order. If an item becomes unavailable or is listed at an obviously incorrect price, we may
+            cancel the order and refund you in full.
+          </p>
+          <h2 class="h5 mt-4">Orders and payment</h2>
+          <p>
+            An order is confirmed only once payment is verified (or, for cash on delivery, once the order is
+            accepted). Every total &mdash; including discounts, coupons and delivery &mdash; is recomputed by
+            our systems at the moment of purchase.
+          </p>
+          <h2 class="h5 mt-4">Coupons</h2>
+          <p>
+            Coupons are subject to their own terms: minimum order value, maximum discount, expiry date and
+            usage limits. They cannot be exchanged for cash and may be withdrawn at any time.
+          </p>
+          <h2 class="h5 mt-4">Reviews</h2>
+          <p>
+            Reviews may only be submitted by customers who received the product. We may remove reviews that
+            contain abuse, personal data, or content unrelated to the product.
+          </p>
+          <h2 class="h5 mt-4">Contact</h2>
+          <p>
+            Questions about these terms: <a href="mailto:{{ SUPPORT_EMAIL }}">{{ SUPPORT_EMAIL }}</a>.
+          </p>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
