@@ -9,6 +9,13 @@ prefetched by Product.objects.with_related()).
       {% with image=product.primary_image %}
         {% if image %}
           <img src="{{ image.image.url }}" alt="{{ image.alt_text|default:product.name }}" loading="lazy">
+          {# Second gallery shot, revealed on hover. Skipped when the product
+             only has one image, so nothing cross-fades into itself. #}
+          {% for extra in product.images.all %}
+            {% if forloop.counter == 2 %}
+              <img class="media-alt" src="{{ extra.image.url }}" alt="" loading="lazy" aria-hidden="true">
+            {% endif %}
+          {% endfor %}
         {% else %}
           <div class="placeholder-media"><i class="bi bi-image"></i></div>
         {% endif %}
@@ -42,6 +49,24 @@ prefetched by Product.objects.with_related()).
         <i class="bi bi-heart"></i>
       </a>
     {% endif %}
+
+    {# Desktop-only quick action; the full button stays in the card body for
+       touch, where there is no hover to reveal anything. #}
+    {% with qv=product.default_variant %}
+      {% if qv and qv.available_quantity > 0 %}
+        <div class="card-quick">
+          <form method="post" action="{% url 'cart:add' %}" class="w-100"
+                hx-post="{% url 'cart:add' %}" hx-swap="beforeend" hx-target="body">
+            {% csrf_token %}
+            <input type="hidden" name="variant_id" value="{{ qv.pk }}">
+            <input type="hidden" name="quantity" value="1">
+            <button class="btn btn-sm w-100" type="submit">
+              <i class="bi bi-lightning-charge me-1"></i>Quick add
+            </button>
+          </form>
+        </div>
+      {% endif %}
+    {% endwith %}
   </div>
 
   <div class="product-card-body">

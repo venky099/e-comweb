@@ -5,6 +5,30 @@
 
 {% block content %}
 
+{# ============ CATEGORY STRIP ============ #}
+{% if nav_categories %}
+<section class="container-xxl">
+  <div class="cat-strip">
+    {% for category in featured_categories %}
+      <a href="{% url 'catalog:category' category.slug %}">
+        <span class="cat-ring">
+          {% if category.image %}
+            <img src="{{ category.image.url }}" alt="" loading="lazy">
+          {% else %}
+            <i class="bi {{ category.icon_class|default:'bi-grid' }}"></i>
+          {% endif %}
+        </span>
+        <span>{{ category.name|truncatechars:14 }}</span>
+      </a>
+    {% endfor %}
+    <a href="{% url 'catalog:product_list' %}?availability=on_sale">
+      <span class="cat-ring"><i class="bi bi-tag"></i></span>
+      <span>Deals</span>
+    </a>
+  </div>
+</section>
+{% endif %}
+
 {# ================= HERO ================= #}
 <section class="hero-section">
   <div class="container-xxl">
@@ -201,9 +225,7 @@
     <h2>Featured products</h2>
     <a href="{% url 'catalog:product_list' %}?sort=popularity" class="section-link">View all <i class="bi bi-arrow-right"></i></a>
   </div>
-  <div class="product-grid reveal-stagger">
-    {% for product in featured_products %}{% include "partials/product_card.html" %}{% endfor %}
-  </div>
+  {% include "partials/product_rail.html" with products=featured_products rail_id="featured" %}
 </section>
 {% endif %}
 
@@ -213,9 +235,7 @@
     <h2>New arrivals</h2>
     <a href="{% url 'catalog:product_list' %}?sort=newest" class="section-link">View all <i class="bi bi-arrow-right"></i></a>
   </div>
-  <div class="product-grid reveal-stagger">
-    {% for product in new_arrivals %}{% include "partials/product_card.html" %}{% endfor %}
-  </div>
+  {% include "partials/product_rail.html" with products=new_arrivals rail_id="arrivals" %}
 </section>
 {% endif %}
 
@@ -225,9 +245,7 @@
     <h2>Best sellers</h2>
     <a href="{% url 'catalog:product_list' %}?sort=popularity" class="section-link">View all <i class="bi bi-arrow-right"></i></a>
   </div>
-  <div class="product-grid reveal-stagger">
-    {% for product in best_sellers %}{% include "partials/product_card.html" %}{% endfor %}
-  </div>
+  {% include "partials/product_rail.html" with products=best_sellers rail_id="bestsellers" %}
 </section>
 {% endif %}
 
@@ -240,6 +258,28 @@
       {% if user.is_staff %}<a href="/admin/catalog/product/add/" class="btn btn-primary">Add a product</a>{% endif %}
     </div>
   </section>
+{% endif %}
+
+{# ================= TOP BRANDS ================= #}
+{% if top_brands %}
+<section class="container-xxl section-block reveal">
+  <div class="section-head">
+    <h2>Top brands</h2>
+    <a href="{% url 'catalog:brand_list' %}" class="section-link">All brands <i class="bi bi-arrow-right"></i></a>
+  </div>
+  <div class="brand-wall reveal-stagger">
+    {% for brand in top_brands %}
+      <a class="brand-chip" href="{% url 'catalog:product_list' %}?brand={{ brand.slug }}"
+         title="{{ brand.name }}">
+        {% if brand.logo %}
+          <img src="{{ brand.logo.url }}" alt="{{ brand.name }}" loading="lazy">
+        {% else %}
+          {{ brand.name }}
+        {% endif %}
+      </a>
+    {% endfor %}
+  </div>
+</section>
 {% endif %}
 
 {# ================= TESTIMONIALS ================= #}

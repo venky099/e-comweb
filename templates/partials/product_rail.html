@@ -1,0 +1,29 @@
+{% comment %}
+Swipeable product rail with arrow controls -- the row pattern every large
+storefront uses.
+
+  {% include "partials/product_rail.html" with products=best_sellers rail_id="best" %}
+
+Scrolling is native (scroll-snap + overflow-x), so touch and trackpad work
+with no JavaScript at all; the arrows are a progressive enhancement for mouse
+users and hide themselves when there is nothing further to scroll to.
+{% endcomment %}
+<div class="rail-wrap" data-rail-wrap>
+  <button class="rail-nav is-prev" type="button"
+          data-rail-prev="{{ rail_id }}" data-enabled="false"
+          aria-label="Scroll left" tabindex="-1">
+    <i class="bi bi-chevron-left"></i>
+  </button>
+
+  <div class="rail" id="rail-{{ rail_id }}" data-rail>
+    {% for product in products %}
+      {% include "partials/product_card.html" %}
+    {% endfor %}
+  </div>
+
+  <button class="rail-nav is-next" type="button"
+          data-rail-next="{{ rail_id }}" data-enabled="false"
+          aria-label="Scroll right" tabindex="-1">
+    <i class="bi bi-chevron-right"></i>
+  </button>
+</div>

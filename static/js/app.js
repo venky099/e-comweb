@@ -202,6 +202,64 @@
     }
   });
 
+  // ---- Horizontal product rails ------------------------------------------
+  // Scrolling itself is native (overflow-x + scroll-snap), so touch and
+  // trackpad work with zero JavaScript. This only drives the arrow buttons
+  // and hides them when there is nothing left to scroll toward.
+  (function () {
+    document.querySelectorAll("[data-rail-wrap]").forEach(function (wrap) {
+      var rail = wrap.querySelector("[data-rail]");
+      var prev = wrap.querySelector("[data-rail-prev]");
+      var next = wrap.querySelector("[data-rail-next]");
+      if (!rail || !prev || !next) return;
+
+      function refresh() {
+        var maxScroll = rail.scrollWidth - rail.clientWidth;
+        var atStart = rail.scrollLeft <= 4;
+        var atEnd = rail.scrollLeft >= maxScroll - 4;
+        var scrollable = maxScroll > 8;
+
+        prev.dataset.enabled = String(scrollable && !atStart);
+        next.dataset.enabled = String(scrollable && !atEnd);
+        prev.tabIndex = scrollable && !atStart ? 0 : -1;
+        next.tabIndex = scrollable && !atEnd ? 0 : -1;
+      }
+
+      function page(direction) {
+        // Move by just under a viewport so a card stays partly visible --
+        // that peek is what tells people there is more to the right.
+        rail.scrollBy({ left: direction * rail.clientWidth * 0.85, behavior: "smooth" });
+      }
+
+      prev.addEventListener("click", function () { page(-1); });
+      next.addEventListener("click", function () { page(1); });
+      rail.addEventListener("scroll", refresh, { passive: true });
+      window.addEventListener("resize", refresh);
+
+      // Images load lazily and change scrollWidth, so measure again after.
+      window.setTimeout(refresh, 250);
+      refresh();
+    });
+  })();
+
+  // ---- Header condenses once you scroll past the announcement bar --------
+  (function () {
+    var header = document.querySelector(".site-header");
+    if (!header) return;
+
+    var ticking = false;
+    function update() {
+      header.classList.toggle("is-stuck", window.scrollY > 60);
+      ticking = false;
+    }
+    window.addEventListener("scroll", function () {
+      if (ticking) return;
+      ticking = true;
+      window.requestAnimationFrame(update);   // one class change per frame, at most
+    }, { passive: true });
+    update();
+  })();
+
   // ---- Cart drawer -------------------------------------------------------
   // After an HTMX add-to-cart the server returns a marker element; that opens
   // the drawer and tells it to reload its contents.

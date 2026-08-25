@@ -4,7 +4,9 @@ from django.core.cache import cache
 from django.shortcuts import render
 from django.views.generic import TemplateView
 
-from apps.catalog.models import Category, Product
+from django.db.models import Count, Q
+
+from apps.catalog.models import Brand, Category, Product
 from apps.coupons.models import Coupon
 from apps.marketing.models import Banner, FlashSale, Offer
 from apps.reviews.models import Review
@@ -44,6 +46,7 @@ class HomeView(TemplateView):
         context["flash_sale_items"] = list(flash_sale.live_items()[:8]) if flash_sale else []
 
         context["featured_categories"] = self.get_featured_categories()
+        context["top_brands"] = self.get_top_brands()
 
         context["testimonials"] = (
             Review.objects.approved()
@@ -53,6 +56,25 @@ class HomeView(TemplateView):
             .order_by("-helpful_count", "-created_at")[:9]
         )
         return context
+
+    def get_top_brands(self, limit=12):
+        """Brands that actually have something to sell, most-stocked first."""
+        key = "home:brands:v1"
+        cached = cache.get(key)
+        if cached is not None:
+            return cached
+        brands = list(
+            Brand.objects.active()
+            .annotate(
+                live_products=Count(
+                    "products", filter=Q(products__status=Product.Status.PUBLISHED)
+                )
+            )
+            .filter(live_products__gt=0)
+            .order_by("-is_featured", "-live_products", "name")[:limit]
+        )
+        cache.set(key, brands, settings.CACHE_TTL_MEDIUM)
+        return brands
 
     def get_featured_categories(self):
         """Cached tiles -- categories change far less often than page views."""
