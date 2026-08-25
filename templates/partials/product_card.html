@@ -9,8 +9,10 @@ prefetched by Product.objects.with_related()).
       {% with image=product.primary_image %}
         {% if image %}
           <img src="{{ image.image.url }}" alt="{{ image.alt_text|default:product.name }}" loading="lazy">
-          {# Second gallery shot, revealed on hover. Skipped when the product
-             only has one image, so nothing cross-fades into itself. #}
+          {% comment %}
+            Second gallery shot, revealed on hover. Skipped when the product
+            only has one image, so nothing cross-fades into itself.
+          {% endcomment %}
           {% for extra in product.images.all %}
             {% if forloop.counter == 2 %}
               <img class="media-alt" src="{{ extra.image.url }}" alt="" loading="lazy" aria-hidden="true">
@@ -50,8 +52,10 @@ prefetched by Product.objects.with_related()).
       </a>
     {% endif %}
 
-    {# Desktop-only quick action; the full button stays in the card body for
-       touch, where there is no hover to reveal anything. #}
+    {% comment %}
+      Desktop-only quick action; the full button stays in the card body for
+      touch, where there is no hover to reveal anything.
+    {% endcomment %}
     {% with qv=product.default_variant %}
       {% if qv and qv.available_quantity > 0 %}
         <div class="card-quick">
@@ -100,8 +104,10 @@ prefetched by Product.objects.with_related()).
         {% if variant.is_low_stock %}
           <p class="stock-note text-warning small mb-2"><i class="bi bi-exclamation-triangle me-1"></i>Only {{ variant.available_quantity }} left</p>
         {% endif %}
-        {# Posts via HTMX so the cart drawer opens without a full page reload;
-           without JS it still submits normally and redirects back. #}
+        {% comment %}
+          Posts via HTMX so the cart drawer opens without a full page reload;
+          without JS it still submits normally and redirects back.
+        {% endcomment %}
         <form method="post" action="{% url 'cart:add' %}" class="mt-auto"
               hx-post="{% url 'cart:add' %}" hx-swap="beforeend" hx-target="body">
           {% csrf_token %}

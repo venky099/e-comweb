@@ -19,12 +19,12 @@
         </div>
 
         {% if gateway_context.gateway == "mock" %}
-          {# ---------------------------------------------------------------
-             Development gateway. Reachable only when PAYMENT_GATEWAY=mock.
-             The signature below is produced server-side and re-verified on
-             the server, so this exercises the same verification path a real
-             gateway does.
-             --------------------------------------------------------------- #}
+          {% comment %}
+            Development gateway. Reachable only when PAYMENT_GATEWAY=mock.
+            The signature below is produced server-side and re-verified on
+            the server, so this exercises the same verification path a real
+            gateway does.
+          {% endcomment %}
           <div class="alert alert-warning small">
             <i class="bi bi-tools me-1"></i>
             <strong>Development payment mode.</strong>
