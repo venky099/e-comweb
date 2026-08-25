@@ -5,6 +5,8 @@
    ========================================================================== */
 
 :root {
+  color-scheme: light;   /* native scrollbars, date pickers, autofill */
+
   /* ---- palette -------------------------------------------------------
      One accent, used only for actions and emphasis. Everything else is a
      neutral. Restraint is what reads as expensive; scattering brand colour
@@ -78,6 +80,8 @@
    know which theme is active. Applies on an explicit choice
    (data-bs-theme="dark") or the OS preference when no choice was made. */
 [data-bs-theme="dark"] {
+  color-scheme: dark;
+
   --brand: #818cf8;
   --brand-hover: #a5b4fc;
   --brand-soft: #1e1b4b;

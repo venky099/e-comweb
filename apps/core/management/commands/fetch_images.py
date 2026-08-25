@@ -107,10 +107,12 @@ CATEGORY_KEYWORDS = {
     "books": ["books"],
 }
 
+# Banners sit behind white headline text on a dark theme, so these lean
+# towards editorial, low-key shots rather than bright product cutouts.
 BANNER_KEYWORDS = {
-    "fresh tech": ["technology", "electronics"],
-    "wardrobe": ["clothing", "fashion"],
-    "home upgrades": ["kitchen", "home interior"],
+    "fresh tech": ["desk workspace", "gadgets"],
+    "wardrobe": ["fashion boutique", "wardrobe"],
+    "home upgrades": ["modern kitchen", "interior"],
 }
 
 

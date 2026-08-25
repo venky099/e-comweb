@@ -27,13 +27,12 @@
     (function () {
       var root = document.documentElement;
 
-      // Theme: an explicit choice wins, otherwise follow the OS. Resolved
-      // here rather than on load, so the page never flashes the wrong theme.
+      // Dark is the house style; a visitor who picks light keeps light.
+      // Resolved here rather than on load, so the page never flashes the
+      // wrong theme before the stylesheet applies.
       var stored = null;
       try { stored = localStorage.getItem("theme"); } catch (e) { /* private mode */ }
-      var prefersDark = window.matchMedia
-        && window.matchMedia("(prefers-color-scheme: dark)").matches;
-      root.setAttribute("data-bs-theme", stored || (prefersDark ? "dark" : "light"));
+      root.setAttribute("data-bs-theme", stored === "light" ? "light" : "dark");
 
       var reduced = window.matchMedia
         && window.matchMedia("(prefers-reduced-motion: reduce)").matches;

@@ -9,12 +9,19 @@ context processor is unavailable, and base.html depends on both.
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Something went wrong</title>
   <style>
-    :root { color-scheme: light; }
+    /* Dark-first, matching the site default. This page cannot read the
+       visitor's stored theme -- it must survive a broken database or a
+       failing context processor -- so it follows the OS instead. */
+    :root { color-scheme: dark light; }
     body {
       margin: 0; min-height: 100vh;
       display: grid; place-items: center;
       font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
-      background: #f8fafc; color: #0f172a; text-align: center; padding: 2rem;
+      background: #0e1117; color: #e8eaf0; text-align: center; padding: 2rem;
+    }
+    @media (prefers-color-scheme: light) {
+      body { background: #f7f8fa; color: #0f172a; }
+      p { color: #475569 !important; }
     }
     .code {
       font-size: clamp(4rem, 16vw, 9rem); font-weight: 900; line-height: 1; margin: 0;
@@ -22,12 +29,12 @@ context processor is unavailable, and base.html depends on both.
       -webkit-background-clip: text; background-clip: text; color: transparent;
     }
     h1 { font-size: 1.5rem; margin: .5rem 0; }
-    p { color: #475569; max-width: 34rem; margin: 0 auto 1.5rem; line-height: 1.6; }
+    p { color: #b8bfcc; max-width: 34rem; margin: 0 auto 1.5rem; line-height: 1.6; }
     a {
       display: inline-block; padding: .6rem 1.4rem; border-radius: 10px;
-      background: #4338ca; color: #fff; text-decoration: none; font-weight: 600;
+      background: #4f46e5; color: #fff; text-decoration: none; font-weight: 600;
     }
-    a:hover { background: #312e81; }
+    a:hover { background: #6366f1; }
   </style>
 </head>
 <body>

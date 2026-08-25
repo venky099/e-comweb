@@ -322,17 +322,6 @@
       });
     });
 
-    // Follow the OS only while the visitor has not chosen for themselves.
-    if (window.matchMedia) {
-      window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", function (event) {
-        var chosen = null;
-        try { chosen = localStorage.getItem("theme"); } catch (e) { /* ignore */ }
-        if (chosen) return;
-        root.setAttribute("data-bs-theme", event.matches ? "dark" : "light");
-        paintIcons();
-      });
-    }
-
     paintIcons();
   })();
 
