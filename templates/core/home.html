@@ -67,7 +67,7 @@
 
 {# ================= VALUE PROPS ================= #}
 <section class="container-xxl">
-  <div class="value-props row g-3">
+  <div class="value-props row g-3 reveal-stagger">
     <div class="col-6 col-lg-3">
       <div class="value-prop"><i class="bi bi-truck"></i>
         <div><strong>Free delivery</strong><span>On orders over {{ CURRENCY_SYMBOL }}{{ FREE_DELIVERY_THRESHOLD }}</span></div>
@@ -93,12 +93,12 @@
 
 {# ================= CATEGORIES ================= #}
 {% if featured_categories %}
-<section class="container-xxl section-block">
+<section class="container-xxl section-block reveal">
   <div class="section-head">
     <h2>Shop by category</h2>
     <a href="{% url 'catalog:product_list' %}" class="section-link">Browse all <i class="bi bi-arrow-right"></i></a>
   </div>
-  <div class="category-tiles">
+  <div class="category-tiles reveal-stagger">
     {% for category in featured_categories %}
       <a href="{% url 'catalog:category' category.slug %}" class="category-tile">
         {% if category.image %}
@@ -115,7 +115,7 @@
 
 {# ================= FLASH SALE ================= #}
 {% if flash_sale and flash_sale_items %}
-<section class="container-xxl section-block">
+<section class="container-xxl section-block reveal">
   <div class="flash-sale rounded-4">
     <div class="flash-sale-head">
       <div>
@@ -130,7 +130,7 @@
         </div>
       {% endif %}
     </div>
-    <div class="flash-sale-grid">
+    <div class="flash-sale-grid reveal-stagger">
       {% for item in flash_sale_items %}
         <div class="flash-item">
           <a href="{{ item.variant.product.get_absolute_url }}">
@@ -162,9 +162,9 @@
 
 {# ================= OFFERS / COUPONS ================= #}
 {% if offers or public_coupons %}
-<section class="container-xxl section-block">
+<section class="container-xxl section-block reveal">
   <div class="section-head"><h2>Offers for you</h2></div>
-  <div class="row g-3">
+  <div class="row g-3 reveal-stagger">
     {% for offer in offers %}
       <div class="col-md-6 col-lg-4">
         <a href="{{ offer.link_url|default:'#' }}" class="offer-card">
@@ -196,43 +196,43 @@
 
 {# ================= PRODUCT RAILS ================= #}
 {% if featured_products %}
-<section class="container-xxl section-block">
+<section class="container-xxl section-block reveal">
   <div class="section-head">
     <h2>Featured products</h2>
     <a href="{% url 'catalog:product_list' %}?sort=popularity" class="section-link">View all <i class="bi bi-arrow-right"></i></a>
   </div>
-  <div class="product-grid">
+  <div class="product-grid reveal-stagger">
     {% for product in featured_products %}{% include "partials/product_card.html" %}{% endfor %}
   </div>
 </section>
 {% endif %}
 
 {% if new_arrivals %}
-<section class="container-xxl section-block">
+<section class="container-xxl section-block reveal">
   <div class="section-head">
     <h2>New arrivals</h2>
     <a href="{% url 'catalog:product_list' %}?sort=newest" class="section-link">View all <i class="bi bi-arrow-right"></i></a>
   </div>
-  <div class="product-grid">
+  <div class="product-grid reveal-stagger">
     {% for product in new_arrivals %}{% include "partials/product_card.html" %}{% endfor %}
   </div>
 </section>
 {% endif %}
 
 {% if best_sellers %}
-<section class="container-xxl section-block">
+<section class="container-xxl section-block reveal">
   <div class="section-head">
     <h2>Best sellers</h2>
     <a href="{% url 'catalog:product_list' %}?sort=popularity" class="section-link">View all <i class="bi bi-arrow-right"></i></a>
   </div>
-  <div class="product-grid">
+  <div class="product-grid reveal-stagger">
     {% for product in best_sellers %}{% include "partials/product_card.html" %}{% endfor %}
   </div>
 </section>
 {% endif %}
 
 {% if not featured_products and not new_arrivals and not best_sellers %}
-  <section class="container-xxl section-block">
+  <section class="container-xxl section-block reveal">
     <div class="empty-state">
       <i class="bi bi-box-seam"></i>
       <h3>No products published yet</h3>
@@ -244,9 +244,9 @@
 
 {# ================= TESTIMONIALS ================= #}
 {% if testimonials %}
-<section class="container-xxl section-block">
+<section class="container-xxl section-block reveal">
   <div class="section-head"><h2>What customers say</h2></div>
-  <div class="testimonial-rail">
+  <div class="testimonial-rail reveal-stagger">
     {% for review in testimonials %}
       <figure class="testimonial">
         <div class="rating-stars mb-2">

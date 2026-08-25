@@ -202,6 +202,74 @@
     }
   });
 
+  // ---- Scroll reveal -----------------------------------------------------
+  // Reveals each element once, then stops observing it. Uses
+  // IntersectionObserver rather than a scroll listener so nothing runs on the
+  // main thread between intersections.
+  (function () {
+    var root = document.documentElement;
+    if (!root.classList.contains("js-anim")) return;
+
+    var targets = document.querySelectorAll(".reveal, .reveal-stagger");
+    if (!targets.length) return;
+
+    function revealAll() {
+      targets.forEach(function (el) { el.classList.add("is-revealed"); });
+    }
+
+    // Old browser, or the user asked for reduced motion after load: show
+    // everything immediately rather than leaving it hidden.
+    if (!("IntersectionObserver" in window)) {
+      revealAll();
+      return;
+    }
+
+    var observer = new IntersectionObserver(
+      function (entries) {
+        entries.forEach(function (entry) {
+          if (!entry.isIntersecting) return;
+          var el = entry.target;
+
+          // Number the children so CSS can stagger their transition-delay.
+          if (el.classList.contains("reveal-stagger")) {
+            Array.prototype.forEach.call(el.children, function (child, index) {
+              child.style.setProperty("--stagger-index", Math.min(index, 10));
+            });
+          }
+
+          el.classList.add("is-revealed");
+          observer.unobserve(el);
+        });
+      },
+      // Fire slightly before the element reaches the viewport, so the motion
+      // has finished by the time it is properly in view.
+      { threshold: 0.08, rootMargin: "0px 0px -40px 0px" }
+    );
+
+    targets.forEach(function (el) { observer.observe(el); });
+
+    // Safety net: anything still hidden after 3s gets shown regardless.
+    window.setTimeout(function () {
+      targets.forEach(function (el) {
+        if (!el.classList.contains("is-revealed")) el.classList.add("is-revealed");
+      });
+    }, 3000);
+  })();
+
+  // ---- Cart badge bump ----------------------------------------------------
+  // A brief pop when the badge count changes, so an HTMX add-to-cart is
+  // noticeable without a page reload.
+  (function () {
+    var badge = document.getElementById("cart-count");
+    if (!badge || !window.MutationObserver) return;
+
+    new MutationObserver(function () {
+      badge.classList.remove("is-bumped");
+      void badge.offsetWidth;              // force reflow so the animation replays
+      badge.classList.add("is-bumped");
+    }).observe(badge, { childList: true, characterData: true, subtree: true });
+  })();
+
   // ---- Auto-submit filter form -------------------------------------------
   document.querySelectorAll("[data-autosubmit]").forEach(function (element) {
     element.addEventListener("change", function () {

@@ -628,6 +628,121 @@ body { background: var(--surface-alt); }
 }
 .social-link:hover { background: var(--brand); color: #fff; }
 
+/* ============================================================== animation */
+/* Progressive enhancement: the hidden state is scoped to .js-anim, which a
+   tiny inline script in <head> sets before first paint. With JS disabled the
+   class is never added, so nothing is ever hidden -- the page just renders.
+   Everything animates transform/opacity only, so it stays off the main thread. */
+
+@media (prefers-reduced-motion: no-preference) {
+
+  .js-anim .reveal {
+    opacity: 0;
+    transform: translateY(18px);
+  }
+  .js-anim .reveal.is-revealed {
+    opacity: 1;
+    transform: none;
+    transition: opacity .55s ease, transform .55s cubic-bezier(.22, .61, .36, 1);
+  }
+
+  /* Children of a revealed container come in one after another. The delay is
+     set as a custom property by the observer, capped so a long grid does not
+     crawl. */
+  .js-anim .reveal-stagger > * {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  .js-anim .reveal-stagger.is-revealed > * {
+    opacity: 1;
+    transform: none;
+    transition: opacity .5s ease, transform .5s cubic-bezier(.22, .61, .36, 1);
+    transition-delay: calc(var(--stagger-index, 0) * 55ms);
+  }
+
+  /* ---- hero: copy slides up whenever a slide becomes active ---- */
+  .carousel-item.active .hero-copy > * {
+    animation: hero-in .7s cubic-bezier(.22, .61, .36, 1) backwards;
+  }
+  .carousel-item.active .hero-copy > *:nth-child(1) { animation-delay: .12s; }
+  .carousel-item.active .hero-copy > *:nth-child(2) { animation-delay: .22s; }
+  .carousel-item.active .hero-copy > *:nth-child(3) { animation-delay: .32s; }
+
+  @keyframes hero-in {
+    from { opacity: 0; transform: translateY(22px); }
+    to   { opacity: 1; transform: none; }
+  }
+
+  /* Slow drift on the hero art, so a static banner still feels alive. */
+  .carousel-item.active .hero-image {
+    animation: hero-drift 14s ease-out forwards;
+  }
+  @keyframes hero-drift {
+    from { transform: scale(1.06); }
+    to   { transform: scale(1); }
+  }
+
+  /* ---- product cards ---- */
+  .product-card-media img {
+    transition: transform .45s cubic-bezier(.22, .61, .36, 1);
+  }
+  .product-card:hover .product-card-media img { transform: scale(1.07); }
+
+  .product-card .btn,
+  .category-tile,
+  .value-prop { transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease; }
+
+  /* The wishlist heart pops when it is saved. */
+  .wishlist-toggle .btn.is-saved i { animation: heart-pop .32s ease; }
+  @keyframes heart-pop {
+    0%   { transform: scale(1); }
+    45%  { transform: scale(1.35); }
+    100% { transform: scale(1); }
+  }
+
+  /* ---- flash sale urgency ---- */
+  .countdown-clock { animation: clock-pulse 2s ease-in-out infinite; }
+  @keyframes clock-pulse {
+    0%, 100% { opacity: 1; }
+    50%      { opacity: .72; }
+  }
+
+  .flash-sale .progress-bar { transition: width .8s cubic-bezier(.22, .61, .36, 1); }
+
+  /* ---- header ---- */
+  .nav-icon-btn i { transition: transform .2s ease; }
+  .nav-icon-btn:hover i { transform: translateY(-2px); }
+
+  #cart-count.is-bumped { animation: badge-bump .4s ease; }
+  @keyframes badge-bump {
+    0%   { transform: scale(1); }
+    40%  { transform: scale(1.45); }
+    100% { transform: scale(1); }
+  }
+
+  /* ---- section headings get a growing underline ---- */
+  .section-head h2 { position: relative; }
+  .section-head h2::after {
+    content: "";
+    position: absolute;
+    left: 0; bottom: -6px;
+    height: 3px; width: 0;
+    border-radius: 2px;
+    background: linear-gradient(90deg, var(--brand), var(--accent));
+    transition: width .6s cubic-bezier(.22, .61, .36, 1) .15s;
+  }
+  .section-block.is-revealed .section-head h2::after,
+  .reveal.is-revealed .section-head h2::after { width: 46px; }
+}
+
+/* Anyone who asks for less motion gets none of it, including the infinite
+   pulse -- which is the one that actually causes problems. */
+@media (prefers-reduced-motion: reduce) {
+  .js-anim .reveal,
+  .js-anim .reveal-stagger > * { opacity: 1; transform: none; }
+  .countdown-clock { animation: none; }
+}
+
 /* --------------------------------------------------------------- utility */
 .sticky-summary { position: sticky; top: 120px; }
 @media (max-width: 991.98px) { .sticky-summary, .summary-card, .filter-panel { position: static; } }
