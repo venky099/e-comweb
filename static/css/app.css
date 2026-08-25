@@ -137,6 +137,37 @@ body { background: var(--surface-alt); }
 .hero-copy h2 { font-size: clamp(1.4rem, 3.4vw, 2.6rem); font-weight: 800; }
 .hero-copy p { font-size: clamp(.9rem, 1.6vw, 1.1rem); opacity: .92; }
 
+/* Bootstrap's carousel controls default to width:15%, which lays two huge
+   invisible buttons over the left and right thirds of the slide -- they sit on
+   top of the hero CTA and swallow its clicks. Shrink them to circles and park
+   them bottom-right, clear of the copy. */
+#heroCarousel .carousel-control-prev,
+#heroCarousel .carousel-control-next {
+  top: auto;
+  bottom: 1.1rem;
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  background: rgba(15, 23, 42, .5);
+  border: 1px solid rgba(255, 255, 255, .25);
+  opacity: .85;
+  transition: opacity .15s ease, background .15s ease;
+  z-index: 3;
+}
+#heroCarousel .carousel-control-prev { left: auto; right: 4.2rem; }
+#heroCarousel .carousel-control-next { right: 1.1rem; }
+#heroCarousel .carousel-control-prev:hover,
+#heroCarousel .carousel-control-next:hover { opacity: 1; background: rgba(15, 23, 42, .75); }
+#heroCarousel .carousel-control-prev-icon,
+#heroCarousel .carousel-control-next-icon { width: 18px; height: 18px; }
+
+/* Keep the indicators clear of those buttons. */
+#heroCarousel .carousel-indicators { margin-bottom: 1.6rem; z-index: 3; }
+
+/* The copy sits above everything, so the whole block stays clickable. */
+.hero-copy { position: relative; z-index: 4; }
+.hero-copy .btn { pointer-events: auto; }
+
 .hero-fallback {
   background: linear-gradient(120deg, var(--brand-dark), var(--brand) 55%, var(--accent));
   color: #fff;

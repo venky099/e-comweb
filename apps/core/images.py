@@ -57,8 +57,15 @@ def _wrap(draw, text, font, max_width):
     return lines[:4]
 
 
-def generate_image(text, width=800, height=800, subtitle="", kind="product"):
-    """Return a ``ContentFile`` holding a JPEG placeholder for ``text``."""
+def generate_image(text, width=800, height=800, subtitle="", kind="product", draw_text=True):
+    """Return a ``ContentFile`` holding a JPEG placeholder for ``text``.
+
+    With ``draw_text=False`` the words are omitted and only the coloured
+    backdrop is produced -- ``text`` still seeds the palette, so the same
+    subject keeps the same look. Used for hero banners, where the headline is
+    real HTML rendered on top (selectable, translatable, responsive) rather
+    than pixels baked into a JPEG.
+    """
     seed = _seed_for(text + kind)
     start, end = GRADIENTS[seed % len(GRADIENTS)]
 
@@ -94,6 +101,12 @@ def generate_image(text, width=800, height=800, subtitle="", kind="product"):
     draw = ImageDraw.Draw(image)
 
     # Title.
+    if not draw_text:
+        buffer = io.BytesIO()
+        image.save(buffer, format="JPEG", quality=82, optimize=True)
+        slug = hashlib.md5(f"{text}{kind}{width}x{height}bg".encode()).hexdigest()[:12]
+        return ContentFile(buffer.getvalue(), name=f"{kind}-{slug}.jpg")
+
     font_size = max(int(width / 13), 18)
     font = _load_font(font_size)
     lines = _wrap(draw, text, font, width * 0.78)
@@ -138,7 +151,12 @@ def gallery_for(name, count=3, subtitle=""):
 
 
 def banner_image(title, subtitle=""):
-    return generate_image(title, width=1600, height=560, subtitle=subtitle, kind="banner")
+    """Textless backdrop for a hero slide.
+
+    The headline and subtitle are rendered as HTML over this by
+    templates/core/home.html -- drawing them here too would double them up.
+    """
+    return generate_image(title, width=1600, height=560, kind="banner", draw_text=False)
 
 
 def category_image(name):
