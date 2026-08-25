@@ -5,30 +5,6 @@
 
 {% block content %}
 
-{# ============ CATEGORY STRIP ============ #}
-{% if nav_categories %}
-<section class="container-xxl">
-  <div class="cat-strip">
-    {% for category in featured_categories %}
-      <a href="{% url 'catalog:category' category.slug %}">
-        <span class="cat-ring">
-          {% if category.image %}
-            <img src="{{ category.image.url }}" alt="" loading="lazy">
-          {% else %}
-            <i class="bi {{ category.icon_class|default:'bi-grid' }}"></i>
-          {% endif %}
-        </span>
-        <span>{{ category.name|truncatechars:14 }}</span>
-      </a>
-    {% endfor %}
-    <a href="{% url 'catalog:product_list' %}?availability=on_sale">
-      <span class="cat-ring"><i class="bi bi-tag"></i></span>
-      <span>Deals</span>
-    </a>
-  </div>
-</section>
-{% endif %}
-
 {# ================= HERO ================= #}
 <section class="hero-section">
   <div class="container-xxl">
