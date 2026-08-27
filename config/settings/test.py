@@ -5,6 +5,7 @@ suite is deterministic: no rate limiting, no shared cache between test cases,
 and fast password hashing.
 """
 from .base import *  # noqa: F401,F403
+from . import db
 from .base import BASE_DIR, INSTALLED_APPS, REST_FRAMEWORK, env
 
 DEBUG = False
@@ -14,22 +15,14 @@ ALLOWED_HOSTS = ["*"]
 # ---------------------------------------------------------------------------
 # Database
 # ---------------------------------------------------------------------------
-if env.bool("USE_SQLITE", default=False):
-    DATABASES = {
-        "default": {
-            "ENGINE": "django.db.backends.sqlite3",
-            "NAME": BASE_DIR / "db.sqlite3",
-            "TEST": {"NAME": None},  # in-memory
-        }
-    }
+# Same resolution as development, so `manage.py test` works on a fresh clone
+# with no PostgreSQL installed.
+_db_config, _db_backend, _db_reason = db.resolve(env, BASE_DIR)
+DATABASES = {"default": _db_config}
+
+if _db_backend == "sqlite":
+    DATABASES["default"]["TEST"] = {"NAME": None}  # in-memory
     INSTALLED_APPS = [a for a in INSTALLED_APPS if a != "django.contrib.postgres"]
-else:
-    DATABASES = {
-        "default": env.db(
-            "DATABASE_URL",
-            default="postgres://postgres:postgres@localhost:5432/ecommerce",
-        )
-    }
 
 # ---------------------------------------------------------------------------
 # Speed & determinism

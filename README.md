@@ -103,7 +103,8 @@ e-com/
 ├── config/
 │   ├── settings/
 │   │   ├── base.py            # shared settings
-│   │   ├── dev.py             # DEBUG, browsable API, optional SQLite
+│   │   ├── db.py              # dev/test database resolution + SQLite fallback
+│   │   ├── dev.py             # DEBUG, browsable API, auto SQLite fallback
 │   │   ├── test.py            # fast hashing, no throttling, isolated media
 │   │   └── prod.py            # HTTPS, HSTS, secure cookies, S3
 │   ├── urls.py                # root URLconf + error handlers
@@ -151,8 +152,9 @@ source venv/bin/activate          # Windows: venv\Scripts\activate
 pip install -r requirements.txt          # version ranges, resolves to current releases
 # pip install -r requirements.lock.txt   # or: exact versions, for a reproducible build
 
-# 4. Configure
-cp .env.example .env              # then edit DJANGO_SECRET_KEY and DATABASE_URL
+# 4. Configure (works as-is in development: falls back to SQLite
+#    when no PostgreSQL server answers)
+cp .env.example .env
 
 # 5. Create the schema
 python manage.py migrate
@@ -254,12 +256,22 @@ DATABASE_URL=postgres://ecommerce_user:choose-a-strong-password@localhost:5432/e
 USE_SQLITE=False
 ```
 
-> **Running without PostgreSQL.** For a quick look at the app on a machine with no
-> Postgres server, set `USE_SQLITE=True` in `.env`. The ORM layer is
-> engine-agnostic and everything works, with one deliberate degradation:
-> full-text search falls back to `icontains` matching with a hand-rolled
-> relevance ranking (see `apps/catalog/search.py`). **Never use this in
-> production** — `config/settings/prod.py` has no SQLite path.
+> **Running without PostgreSQL.** You do not have to do anything. If no server
+> answers at `DATABASE_URL`, development and test settings fall back to a local
+> SQLite file and print a line explaining why — so a fresh clone runs with no
+> database setup at all. The ORM layer is engine-agnostic, with one deliberate
+> degradation: full-text search drops to `icontains` matching with a hand-rolled
+> relevance ranking (see `apps/catalog/search.py`).
+>
+> | Setting | Effect |
+> |---|---|
+> | *(nothing)* | Probe `DATABASE_URL`; use SQLite if nothing answers |
+> | `USE_SQLITE=True` | Always SQLite, skip the probe |
+> | `DB_FALLBACK=False` | Require PostgreSQL; a missing server is an error |
+>
+> The probe only opens a TCP connection, so it detects an *absent* server, not a
+> misconfigured one — wrong credentials still raise, as they should.
+> **Production never falls back:** `config/settings/prod.py` has no SQLite path.
 
 ---
 
@@ -273,7 +285,8 @@ Copy `.env.example` to `.env`. `.env` is gitignored and must never be committed.
 | `DJANGO_DEBUG` | Debug mode | `False` |
 | `ALLOWED_HOSTS` | Comma-separated hostnames | empty |
 | `DATABASE_URL` | PostgreSQL connection URL | localhost default |
-| `USE_SQLITE` | Dev-only SQLite escape hatch | `False` |
+| `USE_SQLITE` | Force SQLite, skipping the reachability probe | `False` |
+| `DB_FALLBACK` | Allow the dev/test SQLite fallback when no server answers | `True` |
 | `REDIS_URL` | Cache backend; blank uses in-memory | blank |
 | `PAYMENT_GATEWAY` | `razorpay`, `stripe` or `mock` | `mock` |
 | `PAYMENT_KEY` / `PAYMENT_SECRET` | Gateway credentials | blank |
@@ -710,8 +723,12 @@ properties. Add a container command for `migrate` and `collectstatic`.
 ## Troubleshooting
 
 **`django.db.utils.OperationalError: could not connect to server`**
-PostgreSQL is not running or `DATABASE_URL` is wrong. Check with
-`pg_isready`, or set `USE_SQLITE=True` for a quick local look.
+**or `could not translate host name "host" to address`**
+You have `DB_FALLBACK=False`, so a missing PostgreSQL server is an error by
+design. Either start PostgreSQL and fix `DATABASE_URL`, or remove that setting
+to let development fall back to SQLite automatically. (The second message means
+`DATABASE_URL` is still the placeholder from `.env.example`, whose host is
+literally `host`.)
 
 **Homepage is empty**
 No products are published. Run `python manage.py seed_data`, or add products in

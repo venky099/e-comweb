@@ -1,5 +1,6 @@
 """Development settings."""
 from .base import *  # noqa: F401,F403
+from . import db
 from .base import BASE_DIR, INSTALLED_APPS, REST_FRAMEWORK, env
 
 DEBUG = True
@@ -14,27 +15,29 @@ SECRET_KEY = env(
 # ---------------------------------------------------------------------------
 # Database
 # ---------------------------------------------------------------------------
-# PostgreSQL is the target database. Set USE_SQLITE=True in .env only when you
-# need to run the project without a local Postgres server (the ORM layer is
-# engine-agnostic; full-text search degrades to icontains -- see
-# apps.catalog.search).
-if env.bool("USE_SQLITE", default=False):
-    DATABASES = {
-        "default": {
-            "ENGINE": "django.db.backends.sqlite3",
-            "NAME": BASE_DIR / "db.sqlite3",
-            "OPTIONS": {"transaction_mode": "IMMEDIATE", "init_command": "PRAGMA foreign_keys=ON;"},
-        }
-    }
-    # django.contrib.postgres pulls in Postgres-only lookups/validators.
+# PostgreSQL is the target. When no server is answering -- a fresh clone, a
+# stopped container, the placeholder URL from .env.example -- this drops to
+# SQLite so the project runs immediately, and says so on stdout.
+#
+#   USE_SQLITE=True    force SQLite, skip the probe
+#   DB_FALLBACK=False  require PostgreSQL and fail loudly if it is absent
+#
+# See config/settings/db.py. Production never does this.
+_db_config, _db_backend, _db_reason = db.resolve(env, BASE_DIR)
+DATABASES = {"default": _db_config}
+
+if _db_backend == "sqlite":
+    # django.contrib.postgres pulls in Postgres-only lookups and validators.
     INSTALLED_APPS = [a for a in INSTALLED_APPS if a != "django.contrib.postgres"]
-else:
-    DATABASES = {
-        "default": env.db(
-            "DATABASE_URL",
-            default="postgres://postgres:postgres@localhost:5432/ecommerce",
+    if "no server answering" in _db_reason:
+        # Printed rather than logged: logging is not configured this early, and
+        # a newcomer needs to see why their data is not in Postgres.
+        print(
+            f"\n  Using SQLite -- {_db_reason}."
+            "\n  Set DATABASE_URL and start PostgreSQL to use it instead,"
+            "\n  or set DB_FALLBACK=False to make its absence an error.\n"
         )
-    }
+else:
     DATABASES["default"]["CONN_MAX_AGE"] = 0
 
 # WhiteNoise serves from the staticfiles finders in development, so there is
