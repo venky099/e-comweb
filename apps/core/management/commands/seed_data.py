@@ -200,6 +200,7 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         random.seed(20260825)  # deterministic runs
         self.with_images = not options["no_images"]
+        self.image_failures = []
         self.stdout.write(self.style.MIGRATE_HEADING("Seeding demo data"))
 
         if options["flush"]:
@@ -216,6 +217,17 @@ class Command(BaseCommand):
         self._create_reviews(orders)
 
         self.stdout.write("")
+        if self.image_failures:
+            self.stdout.write(
+                self.style.WARNING(
+                    f"  {len(self.image_failures)} image(s) could not be generated:"
+                )
+            )
+            for failure in self.image_failures[:5]:
+                self.stdout.write(f"    {failure[:96]}")
+            self.stdout.write("  Everything else was seeded. Try: python manage.py fetch_images")
+            self.stdout.write("")
+
         self.stdout.write(self.style.SUCCESS("Demo data ready."))
         self.stdout.write(f"  Admin login : {options['admin_email']} / {options['admin_password']}")
         self.stdout.write(f"  Customer    : {customers[0].email} / customer12345")
@@ -455,7 +467,16 @@ class Command(BaseCommand):
         # Drop rows whose files have gone, so the gallery is rebuilt whole.
         for image in existing:
             image.delete()
-        files = image_factory.gallery_for(product.name, count=3, subtitle=brand_name)
+        try:
+            files = image_factory.gallery_for(product.name, count=3, subtitle=brand_name)
+        except Exception as exc:
+            # Drawing depends on fonts and Pillow behaviour that vary by
+            # machine. A product without a picture is a blemish; aborting the
+            # whole seed -- which rolls the catalog back to nothing, because
+            # handle() is atomic -- is far worse.
+            self.image_failures.append(f"{product.name}: {exc}")
+            return
+
         for index, file in enumerate(files):
             ProductImage.objects.create(
                 product=product,

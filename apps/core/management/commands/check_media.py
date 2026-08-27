@@ -18,6 +18,7 @@ from pathlib import Path
 
 from django.conf import settings
 from django.core.management.base import BaseCommand
+from django.db import connection
 
 from apps.catalog.models import Brand, Category, Product, ProductImage
 from apps.marketing.models import Banner
@@ -38,6 +39,40 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         self.stdout.write(self.style.MIGRATE_HEADING("Media diagnostic"))
         problems = []
+
+        # ---- database ------------------------------------------------
+        # Which database is actually in use, and does it have anything in it?
+        # An empty catalog and an unserved image look the same in a browser.
+        database = settings.DATABASES["default"]
+        engine = database["ENGINE"].rsplit(".", 1)[-1]
+        self.stdout.write("\nDatabase")
+        self.stdout.write(f"  engine             {engine}")
+        self.stdout.write(f"  name               {database['NAME']}")
+
+        if engine == "sqlite3":
+            db_file = Path(str(database["NAME"]))
+            exists = db_file.exists()
+            size = f"{db_file.stat().st_size / 1024:.0f} KB" if exists else "-"
+            self.stdout.write(f"  file exists        {exists}")
+            self.stdout.write(f"  file size          {size}")
+            if not exists:
+                problems.append(
+                    f"The database file {db_file} does not exist -- "
+                    "run: python manage.py migrate"
+                )
+
+        try:
+            connection.ensure_connection()
+            self.stdout.write(self.style.SUCCESS("  connection         ok"))
+        except Exception as exc:
+            self.stdout.write(self.style.ERROR(f"  connection         FAILED: {exc}"))
+            problems.append(f"Cannot connect to the database: {exc}")
+
+        self.stdout.write(
+            f"  rows               {Product.objects.count()} products, "
+            f"{ProductImage.objects.count()} product images, "
+            f"{Category.objects.count()} categories"
+        )
 
         # ---- configuration -------------------------------------------
         media_root = Path(settings.MEDIA_ROOT)
