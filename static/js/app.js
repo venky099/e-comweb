@@ -333,6 +333,10 @@
     var root = document.documentElement;
     if (!root.classList.contains("js-anim")) return;
 
+    // Tell the head script we are alive, so it does not strip the animation
+    // styles out from under us.
+    root.setAttribute("data-reveal-ready", "");
+
     var targets = document.querySelectorAll(".reveal, .reveal-stagger");
     if (!targets.length) return;
 

@@ -37,6 +37,18 @@
       var reduced = window.matchMedia
         && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
       if (!reduced) { root.className += " js-anim"; }
+
+      // Last-resort net. The reveal styles hide content until app.js marks it
+      // revealed, so if app.js never runs -- blocked, 404, or an error thrown
+      // earlier in the file -- the page would stay blank-but-working forever,
+      // which reads to a visitor as "the images are broken". app.js sets
+      // data-reveal-ready as soon as it takes charge; if that never arrives,
+      // give up on animating and show everything.
+      window.setTimeout(function () {
+        if (!root.hasAttribute("data-reveal-ready")) {
+          root.className = root.className.replace(/(^| )js-anim( |$)/, "$1");
+        }
+      }, 4000);
     })();
   </script>
 

@@ -7,7 +7,7 @@ import re
 from pathlib import Path
 
 from django.conf import settings
-from django.test import TestCase
+from django.test import SimpleTestCase, TestCase
 from django.urls import reverse
 
 from apps.core.tests.factories import create_category, create_product
@@ -127,3 +127,29 @@ class RenderedOutputTests(TestCase):
 
         self.client.force_login(user)
         self.assert_clean(reverse("payments:start", args=[order.order_number]))
+
+
+class RevealFailsafeTests(SimpleTestCase):
+    """The reveal styles hide content until JavaScript un-hides it.
+
+    That makes app.js a single point of failure for the whole page: if it is
+    blocked or throws, every product grid stays at opacity 0 and the site
+    looks like its images are broken. The head script must be able to undo
+    the hiding on its own.
+    """
+
+    def setUp(self):
+        root = Path(settings.BASE_DIR)
+        self.base = (root / "templates" / "base.html").read_text(encoding="utf-8")
+        self.app_js = (root / "static" / "js" / "app.js").read_text(encoding="utf-8")
+
+    def test_head_script_strips_js_anim_when_app_js_never_reports_in(self):
+        head = self.base.split("</head>")[0]
+        self.assertIn("data-reveal-ready", head)
+        self.assertIn("js-anim", head)
+
+    def test_app_js_reports_in_before_it_can_bail_out(self):
+        self.assertIn('setAttribute("data-reveal-ready"', self.app_js)
+        flag = self.app_js.index('setAttribute("data-reveal-ready"')
+        bail = self.app_js.index("if (!targets.length) return;")
+        self.assertLess(flag, bail, "the flag must be set before any early return")
