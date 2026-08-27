@@ -322,7 +322,7 @@ class Command(BaseCommand):
                     "description": f"Everything in {name.lower()}, curated and in stock.",
                 },
             )
-            if self.with_images and not parent.image:
+            if self.with_images and not self._file_present(parent.image):
                 parent.image.save(
                     f"{parent.slug}.jpg", image_factory.category_image(name), save=True
                 )
@@ -337,6 +337,10 @@ class Command(BaseCommand):
                         "sort_order": child_order,
                     },
                 )
+                if self.with_images and not self._file_present(child.image):
+                    child.image.save(
+                        f"{child.slug}.jpg", image_factory.category_image(child_name), save=True
+                    )
                 created[child_name] = child
 
         self.stdout.write(f"  Categories: {len(created)}")
@@ -353,7 +357,7 @@ class Command(BaseCommand):
                     "description": f"{name} builds dependable products with a long warranty.",
                 },
             )
-            if self.with_images and not brand.logo:
+            if self.with_images and not self._file_present(brand.logo):
                 brand.logo.save(f"{brand.slug}.jpg", image_factory.brand_logo(name), save=True)
             brands.append(brand)
         self.stdout.write(f"  Brands: {len(brands)}")
@@ -434,9 +438,23 @@ class Command(BaseCommand):
         return products
 
     def _create_images(self, product, brand_name):
-        """Give each product a small gallery so grids and galleries look real."""
-        if not self.with_images or product.images.exists():
+        """Give each product a small gallery so grids and galleries look real.
+
+        Regenerates when the rows are missing *or* when they point at files
+        that are not on disk. A database restored without its media directory
+        looks complete to a row count while every <img> on the page is broken,
+        and that state could not be repaired by re-running.
+        """
+        if not self.with_images:
             return
+
+        existing = list(product.images.all())
+        if existing and all(self._file_present(i.image) for i in existing):
+            return
+
+        # Drop rows whose files have gone, so the gallery is rebuilt whole.
+        for image in existing:
+            image.delete()
         files = image_factory.gallery_for(product.name, count=3, subtitle=brand_name)
         for index, file in enumerate(files):
             ProductImage.objects.create(
@@ -446,6 +464,16 @@ class Command(BaseCommand):
                 is_primary=index == 0,
                 sort_order=index,
             )
+
+    @staticmethod
+    def _file_present(field):
+        """True when the stored file actually exists in the storage backend."""
+        if not field:
+            return False
+        try:
+            return field.storage.exists(field.name)
+        except Exception:
+            return False
 
     def _create_variants(self, product, category_name):
         """Give clothing/footwear real size+colour variants, others a default."""
@@ -572,7 +600,7 @@ class Command(BaseCommand):
                     "end_at": now + timedelta(days=60),
                 },
             )
-            if self.with_images and not banner.image:
+            if self.with_images and not self._file_present(banner.image):
                 banner.image.save(
                     f"banner-{order}.jpg",
                     image_factory.banner_image(title, subtitle),
