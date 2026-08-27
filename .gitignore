@@ -89,3 +89,6 @@ desktop.ini
 node_modules/
 npm-debug.log*
 yarn-error.log*
+
+# Stray screenshots dropped into the project root.
+WhatsApp Image *
