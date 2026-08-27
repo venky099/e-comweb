@@ -12,6 +12,30 @@ def _is_postgres():
     return connection.vendor == "postgresql"
 
 
+_trigram_support = {}
+
+
+def _has_trigram():
+    """Is the pg_trgm extension installed on the current database?
+
+    Migration 0002 creates it, but creating an extension needs privileges a
+    managed database may withhold, and an older database may predate that
+    migration. Asking is cheap and cached; guessing costs a 500 on every
+    search. Without it we simply rank by full-text alone.
+    """
+    if not _is_postgres():
+        return False
+    alias = connection.alias
+    if alias not in _trigram_support:
+        try:
+            with connection.cursor() as cursor:
+                cursor.execute("SELECT 1 FROM pg_extension WHERE extname = %s", ["pg_trgm"])
+                _trigram_support[alias] = cursor.fetchone() is not None
+        except Exception:
+            _trigram_support[alias] = False
+    return _trigram_support[alias]
+
+
 def _fallback_search(queryset, term):
     """Portable search with a hand-rolled relevance ranking.
 
@@ -62,10 +86,15 @@ def _postgres_search(queryset, term):
     )
     query = SearchQuery(term, search_type="websearch")
 
+    # Trigram similarity catches misspellings, but only where pg_trgm is
+    # installed. Rank by full-text alone when it is not, rather than emitting
+    # SQL the database cannot execute.
+    rank = SearchRank(vector, query)
+    if _has_trigram():
+        rank = rank + TrigramSimilarity("name", term)
+
     return (
-        queryset.annotate(
-            search_rank=SearchRank(vector, query) + TrigramSimilarity("name", term)
-        )
+        queryset.annotate(search_rank=rank)
         .filter(Q(search_rank__gt=0.05) | Q(sku__iexact=term))
         .distinct()
     )

@@ -1,9 +1,13 @@
 """Catalog browsing, search, filtering and staff CRUD permission tests."""
 from decimal import Decimal
+from pathlib import Path
+from unittest import mock
 
+from django.conf import settings
 from django.test import TestCase
 from django.urls import reverse
 
+from apps.catalog import search
 from apps.catalog.models import Product
 from apps.core.tests.factories import (
     create_brand,
@@ -277,3 +281,29 @@ class StaffCrudPermissionTests(TestCase):
         )
         self.assertEqual(response.status_code, 200)
         self.assertFalse(Product.objects.filter(pk=target.pk).exists())
+
+
+class TrigramGuardTests(TestCase):
+    """Search must not emit SQL the database cannot run.
+
+    TrigramSimilarity compiles to SIMILARITY(), which exists only where the
+    pg_trgm extension is installed. A Postgres database without it answered
+    every search with a 500 until migration 0002 and this guard landed.
+    """
+
+    def test_trigram_is_never_claimed_on_a_non_postgres_backend(self):
+        self.assertFalse(search._has_trigram())
+
+    def test_rank_drops_the_trigram_term_when_the_extension_is_absent(self):
+        with mock.patch.object(search, "_is_postgres", return_value=True), \
+                mock.patch.object(search, "_has_trigram", return_value=False):
+            sql = str(search._postgres_search(Product.objects.all(), "shoes").query)
+        self.assertNotIn("SIMILARITY", sql.upper())
+
+    def test_the_extension_migration_exists(self):
+        migration = (
+            Path(settings.BASE_DIR)
+            / "apps" / "catalog" / "migrations" / "0002_pg_trgm_extension.py"
+        )
+        self.assertTrue(migration.exists())
+        self.assertIn("TrigramExtension", migration.read_text(encoding="utf-8"))
