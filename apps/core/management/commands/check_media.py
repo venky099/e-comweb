@@ -14,11 +14,13 @@ identical in a browser, and each needs a different fix:
 
 Read-only. It never changes anything, it just reports and prescribes.
 """
+import re
 from pathlib import Path
 
 from django.conf import settings
 from django.core.management.base import BaseCommand
 from django.db import connection
+from django.test import Client
 
 from apps.catalog.models import Brand, Category, Product, ProductImage
 from apps.marketing.models import Banner
@@ -148,6 +150,69 @@ class Command(BaseCommand):
                 # deliberate -- worth reporting, not worth alarming about.
                 (incomplete if label == "banners" else notes).append(
                     f"{len(rows) - present} {label}"
+                )
+
+        # ---- end-to-end render ---------------------------------------
+        # Files on disk prove nothing on their own: the page still has to
+        # reference them and the server still has to hand them over. This
+        # walks the same path the browser does, so "everything checks out"
+        # means the browser really can get the pictures.
+        self.stdout.write("\nPage render")
+        if "testserver" not in settings.ALLOWED_HOSTS:
+            # In-memory only; nothing is written and the process exits after.
+            settings.ALLOWED_HOSTS = list(settings.ALLOWED_HOSTS) + ["testserver"]
+
+        try:
+            client = Client()
+            response = client.get("/")
+        except Exception as exc:
+            self.stdout.write(self.style.ERROR(f"  GET /              FAILED: {exc}"))
+            problems.append(f"The home page raises an error: {exc}")
+        else:
+            style = self.style.SUCCESS if response.status_code == 200 else self.style.ERROR
+            self.stdout.write(style(f"  GET /              {response.status_code}"))
+            if response.status_code != 200:
+                problems.append(
+                    f"The home page returns {response.status_code}, not 200."
+                )
+            html = response.content.decode("utf-8", "ignore")
+            urls = re.findall(r'src="(/media/[^"]+)"', html)
+            self.stdout.write(f"  <img> tags         {html.count('<img')}")
+            self.stdout.write(f"  /media/ images     {len(urls)}")
+
+            if not urls:
+                problems.append(
+                    "The home page HTML contains no /media/ image URLs, so the "
+                    "browser is never asked to load any product photo."
+                )
+            else:
+                self.stdout.write(f"  first image        {urls[0]}")
+                fetched = client.get(urls[0])
+                if fetched.status_code == 200:
+                    size = sum(len(chunk) for chunk in fetched.streaming_content)                         if fetched.streaming else len(fetched.content)
+                    self.stdout.write(
+                        self.style.SUCCESS(f"  serving it         200, {size} bytes")
+                    )
+                else:
+                    self.stdout.write(
+                        self.style.ERROR(f"  serving it         {fetched.status_code}")
+                    )
+                    problems.append(
+                        f"The server returns {fetched.status_code} for {urls[0]} -- "
+                        "the file exists but is not being served."
+                    )
+
+            # The reveal styles hide content until JavaScript un-hides it, so a
+            # copy of the code without the head-script failsafe can render a
+            # page that is fully working and completely invisible.
+            has_failsafe = "data-reveal-ready" in html
+            self.stdout.write(
+                f"  reveal failsafe    {'present' if has_failsafe else 'MISSING'}"
+            )
+            if not has_failsafe:
+                problems.append(
+                    "This copy predates the reveal failsafe, so if app.js fails "
+                    "the page stays invisible. Run: git pull"
                 )
 
         # ---- verdict -------------------------------------------------
