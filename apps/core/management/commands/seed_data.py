@@ -371,8 +371,19 @@ class Command(BaseCommand):
             for name, price, mrp, blurb in templates:
                 sku_counter += 1
                 sku = f"SKU-{sku_counter}"
-                if Product.objects.filter(sku=sku).exists():
-                    products.append(Product.objects.get(sku=sku))
+                existing = Product.objects.filter(sku=sku).first()
+                if existing is not None:
+                    # A previous run may have died partway -- during image
+                    # generation, or on a database error. Skipping outright
+                    # would leave that product without variants or images
+                    # forever, because every later run skips it again. Backfill
+                    # instead; both helpers are no-ops when nothing is missing.
+                    if not existing.variants.exists():
+                        self._create_variants(existing, category_name)
+                    self._create_images(
+                        existing, existing.brand.name if existing.brand_id else ""
+                    )
+                    products.append(existing)
                     continue
 
                 brand = random.choice(brands)
