@@ -145,3 +145,12 @@ class ShippingRate(TimeStampedModel):
         if self.free_over is not None and Decimal(order_value) >= self.free_over:
             return ZERO
         return self.price
+
+
+# Parcels live in their own module for readability, but Django needs them
+# importable from models.py to discover them.
+from apps.shipping.shipments import (  # noqa: E402,F401  isort:skip
+    Shipment,
+    ShipmentItem,
+    TrackingEvent,
+)
