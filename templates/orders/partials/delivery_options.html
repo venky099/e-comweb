@@ -1,0 +1,27 @@
+{% load money %}
+{% comment %}
+  Delivery choice (MST spec section 30).
+
+  Prices come from the same quote place_order() recomputes, so what is shown
+  here is what gets charged. Nothing is calculated in the template.
+{% endcomment %}
+{% if delivery_options %}
+  <div class="checkout-block mb-4">
+    <h2 class="h6 mb-3">Delivery method</h2>
+    <div class="delivery-options">
+      {% for option in delivery_options %}
+        <label class="delivery-option {% if option.code == selected_delivery %}is-selected{% endif %}">
+          <input type="radio" name="shipping_method" value="{{ option.code }}"
+                 {% if option.code == selected_delivery %}checked{% endif %}>
+          <span class="delivery-option-body">
+            <span class="delivery-option-name">{{ option.name }}</span>
+            <span class="delivery-option-eta text-body-secondary small">Estimated {{ option.estimate }}</span>
+          </span>
+          <span class="delivery-option-price fw-semibold">
+            {% if option.is_free %}Free{% else %}{% price option.price %}{% endif %}
+          </span>
+        </label>
+      {% endfor %}
+    </div>
+  </div>
+{% endif %}

@@ -36,6 +36,9 @@
         <form method="post" action="{% url 'orders:checkout_payment' %}" id="place-order-form">
           {% csrf_token %}
 
+          {# Inside the form: the chosen method has to post with the order. #}
+          {% include "orders/partials/delivery_options.html" %}
+
           {% if form.non_field_errors %}
             <div class="alert alert-danger py-2 small">{{ form.non_field_errors.0 }}</div>
           {% endif %}

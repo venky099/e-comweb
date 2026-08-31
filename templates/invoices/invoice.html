@@ -1,0 +1,164 @@
+{% load money %}<!DOCTYPE html>
+{% comment %}
+  The invoice document (MST spec section 26).
+
+  Deliberately standalone rather than extending base.html: it is printed, sent
+  as an email body and rendered to PDF, none of which want a site header, a
+  cart badge or a theme toggle. All styling is inline for the same reason --
+  an email client will not fetch a stylesheet.
+
+  Every figure comes from the invoice's own columns, never from the order or
+  from current settings. The document is a record, not a view of live state.
+{% endcomment %}
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Invoice {{ invoice.number }}</title>
+  <style>
+    @page { size: A4; margin: 14mm; }
+    body {
+      font-family: "Helvetica Neue", Arial, sans-serif;
+      font-size: 12px; line-height: 1.5; color: #14181f; background: #fff;
+      margin: 0; padding: 24px;
+    }
+    .sheet { max-width: 780px; margin: 0 auto; }
+    .head { display: flex; justify-content: space-between; gap: 24px;
+            border-bottom: 2px solid #14181f; padding-bottom: 16px; }
+    .company-name { font-size: 20px; font-weight: 700; margin: 0 0 4px; }
+    .muted { color: #5b6472; }
+    .doc-title { font-size: 22px; font-weight: 700; margin: 0 0 6px; text-align: right; }
+    .doc-meta { text-align: right; }
+    .doc-meta div { margin-bottom: 2px; }
+    .parties { display: flex; gap: 24px; margin: 20px 0 22px; }
+    .party { flex: 1; }
+    .label { font-size: 10px; letter-spacing: .08em; text-transform: uppercase;
+             color: #5b6472; margin-bottom: 5px; }
+    address { font-style: normal; white-space: pre-line; }
+    table { width: 100%; border-collapse: collapse; }
+    thead th { text-align: left; font-size: 10px; letter-spacing: .06em;
+               text-transform: uppercase; color: #5b6472;
+               border-bottom: 1px solid #c9cfd8; padding: 8px 6px; }
+    tbody td { padding: 9px 6px; border-bottom: 1px solid #e6e9ee; vertical-align: top; }
+    .num { text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
+    .totals { margin-left: auto; width: 300px; margin-top: 14px; }
+    .totals td { padding: 5px 6px; }
+    .totals .grand td { border-top: 2px solid #14181f; font-weight: 700; font-size: 14px; padding-top: 9px; }
+    .note { margin-top: 26px; padding-top: 12px; border-top: 1px solid #e6e9ee;
+            font-size: 11px; color: #5b6472; }
+  </style>
+</head>
+<body>
+  <div class="sheet">
+
+    <div class="head">
+      <div>
+        <p class="company-name">{{ invoice.company_name }}</p>
+        {% if invoice.company_address %}<address class="muted">{{ invoice.company_address }}</address>{% endif %}
+        <div class="muted">
+          {% if invoice.company_email %}{{ invoice.company_email }}{% endif %}
+          {% if invoice.company_phone %} &middot; {{ invoice.company_phone }}{% endif %}
+        </div>
+        {% if invoice.company_tax_number %}
+          <div class="muted">Tax reg. {{ invoice.company_tax_number }}</div>
+        {% endif %}
+      </div>
+      <div class="doc-meta">
+        <p class="doc-title">Tax Invoice</p>
+        <div><strong>{{ invoice.number }}</strong></div>
+        <div class="muted">Order {{ invoice.order.order_number }}</div>
+        <div class="muted">{{ invoice.issued_at|date:"j M Y" }}</div>
+        <div class="muted">{{ invoice.payment_method }}</div>
+      </div>
+    </div>
+
+    <div class="parties">
+      <div class="party">
+        <p class="label">Billed to</p>
+        <strong>{{ invoice.customer_name }}</strong>
+        <address>{{ invoice.billing_address }}</address>
+        {% if invoice.customer_email %}<div class="muted">{{ invoice.customer_email }}</div>{% endif %}
+      </div>
+      <div class="party">
+        <p class="label">Delivered to</p>
+        <address>{{ invoice.shipping_address }}</address>
+      </div>
+    </div>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Description</th>
+          <th>SKU</th>
+          <th class="num">Qty</th>
+          <th class="num">Price</th>
+          <th class="num">Discount</th>
+          <th class="num">Total</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for line in lines %}
+          <tr>
+            <td>{{ line.description }}</td>
+            <td class="muted">{{ line.sku }}</td>
+            <td class="num">{{ line.quantity }}</td>
+            <td class="num">{{ line.unit_price|money_in:invoice.currency }}</td>
+            <td class="num">{% if line.discount %}{{ line.discount|money_in:invoice.currency }}{% else %}&mdash;{% endif %}</td>
+            <td class="num">{{ line.total|money_in:invoice.currency }}</td>
+          </tr>
+        {% empty %}
+          <tr><td colspan="6" class="muted">No items recorded.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+
+    <table class="totals">
+      <tr>
+        <td>Subtotal</td>
+        <td class="num">{{ invoice.subtotal|money_in:invoice.currency }}</td>
+      </tr>
+      {% if invoice.discount_total %}
+        <tr>
+          <td>Discount</td>
+          <td class="num">&minus; {{ invoice.discount_total|money_in:invoice.currency }}</td>
+        </tr>
+      {% endif %}
+      <tr>
+        <td>Shipping{% if invoice.order.shipping_method_name %} ({{ invoice.order.shipping_method_name }}){% endif %}</td>
+        <td class="num">
+          {% if invoice.shipping_total %}{{ invoice.shipping_total|money_in:invoice.currency }}{% else %}Free{% endif %}
+        </td>
+      </tr>
+      {% for tax in tax_lines %}
+        <tr>
+          <td>{{ tax.name }} <span class="muted">{{ tax.percent|floatformat:"-2" }}%</span></td>
+          <td class="num">{{ tax.amount|money_in:invoice.currency }}</td>
+        </tr>
+      {% empty %}
+        {% if invoice.tax_total %}
+          <tr>
+            <td>Tax</td>
+            <td class="num">{{ invoice.tax_total|money_in:invoice.currency }}</td>
+          </tr>
+        {% endif %}
+      {% endfor %}
+      <tr class="grand">
+        <td>Grand total</td>
+        <td class="num">{{ invoice.grand_total|money_in:invoice.currency }}</td>
+      </tr>
+    </table>
+
+    <div class="note">
+      {% if invoice.currency != invoice.base_currency %}
+        {# Section 60: the rate is part of the record, not a footnote. #}
+        <p>
+          Charged in {{ invoice.currency }} at an exchange rate of
+          {{ invoice.exchange_rate|floatformat:"-6" }} {{ invoice.currency }}
+          per {{ invoice.base_currency }}, fixed on {{ invoice.issued_at|date:"j M Y" }}.
+        </p>
+      {% endif %}
+      <p>This is a computer-generated invoice and is valid without a signature.</p>
+    </div>
+
+  </div>
+</body>
+</html>

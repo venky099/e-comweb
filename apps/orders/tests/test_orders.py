@@ -42,12 +42,28 @@ class OrderPlacementTests(TestCase):
         self.assertEqual(order.status, Order.Status.PENDING)
         self.assertEqual(order.items.count(), 1)
 
-    def test_order_number_is_unique_and_formatted(self):
+    def test_order_number_follows_the_document_series(self):
+        """Spec section 61: MST-ORD-2026-000001, its own sequence."""
+        from django.utils import timezone
+
         order = services.place_order(
             self.user, self.cart, self.address, Order.PaymentMethod.COD
         )
-        self.assertTrue(order.order_number.startswith("LS-"))
-        self.assertEqual(len(order.order_number.split("-")), 3)
+        prefix, kind, year, sequence = order.order_number.split("-")
+        self.assertEqual(prefix, "MST")
+        self.assertEqual(kind, "ORD")
+        self.assertEqual(int(year), timezone.now().year)
+        self.assertEqual(len(sequence), 6)
+
+    def test_order_numbers_do_not_repeat(self):
+        first = services.place_order(
+            self.user, self.cart, self.address, Order.PaymentMethod.COD
+        )
+        self.cart.items.create(variant=self.variant, quantity=1)
+        second = services.place_order(
+            self.user, self.cart, self.address, Order.PaymentMethod.COD
+        )
+        self.assertNotEqual(first.order_number, second.order_number)
 
     def test_order_snapshots_product_and_address(self):
         order = services.place_order(

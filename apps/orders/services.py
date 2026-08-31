@@ -313,6 +313,28 @@ def _commit_stock(order, user=None):
 
 
 @transaction.atomic
+def _issue_invoice(order):
+    """Raise an invoice for a confirmed order and email it (section 26).
+
+    Never allowed to break confirmation: a customer whose payment succeeded
+    must end up with a confirmed order even if the mail server is down. The
+    invoice row is still written; only the sending is best-effort.
+    """
+    from apps.invoices import services as invoice_services
+
+    try:
+        invoice = invoice_services.issue_for(order)
+    except Exception:
+        logger.exception("Could not issue an invoice for order %s", order.order_number)
+        return None
+
+    try:
+        invoice_services.email_to_customer(invoice)
+    except Exception:
+        logger.exception("Could not email invoice %s", invoice.number)
+    return invoice
+
+
 def mark_paid(order, payment=None):
     """Payment captured: commit reserved stock and confirm the order."""
     order = Order.objects.select_for_update().get(pk=order.pk)
@@ -328,6 +350,7 @@ def mark_paid(order, payment=None):
         update_fields=["payment_status", "status", "confirmed_at", "updated_at"]
     )
     _log_status(order, Order.Status.CONFIRMED, note="Payment received")
+    _issue_invoice(order)
     logger.info("Order %s marked paid", order.order_number)
     return order
 
@@ -345,6 +368,7 @@ def confirm_cod(order):
     order.confirmed_at = timezone.now()
     order.save(update_fields=["status", "confirmed_at", "updated_at"])
     _log_status(order, Order.Status.CONFIRMED, note="Cash on delivery confirmed")
+    _issue_invoice(order)
     return order
 
 

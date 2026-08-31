@@ -1167,3 +1167,23 @@ small, .small { font-size: var(--text-sm); }
    the selection changes. */
 .locale-menu { min-width: 264px; }
 .locale-switcher .dropdown-toggle::after { margin-left: 0.25rem; }
+
+/* ---- delivery method chooser ----------------------------------------- */
+.delivery-options { display: flex; flex-direction: column; gap: 8px; }
+
+.delivery-option {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border: 1px solid var(--bs-border-color);
+  border-radius: 10px;
+  cursor: pointer;
+  transition: border-color .15s ease, background-color .15s ease;
+}
+
+.delivery-option:hover { border-color: var(--brand); }
+.delivery-option.is-selected { border-color: var(--brand); background: var(--brand-soft); }
+.delivery-option-body { display: flex; flex-direction: column; flex: 1 1 auto; }
+.delivery-option-name { font-weight: 600; }
+.delivery-option-price { white-space: nowrap; }

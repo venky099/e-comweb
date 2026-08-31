@@ -14,8 +14,10 @@ from django_ratelimit.decorators import ratelimit
 
 from apps.accounts.forms import AddressForm
 from apps.cart.services import clamp_cart_to_stock, get_cart
+from apps.shipping import services as shipping_services
 
 from . import services
+from . import services as order_services
 from .forms import CancelOrderForm, CheckoutAddressForm, CheckoutPaymentForm, ReturnRequestForm
 from .models import Order, OrderItem, ReturnRequest
 
@@ -151,6 +153,18 @@ class CheckoutPaymentView(CheckoutStepMixin, View):
             return None
         return request.user.addresses.filter(pk=address_id).first()
 
+    def delivery_options(self, address):
+        """The delivery choices for this address, and the preselected one.
+
+        Quoted from the same service place_order() will use, so the price
+        shown here is the price charged -- there is no second calculation to
+        drift out of step.
+        """
+        items = list(self.cart.live_items())
+        country, _state = order_services.destination_for(address.as_snapshot())
+        options = shipping_services.quote(items, country, self.cart.subtotal)
+        return options, shipping_services.default_option(options)
+
     def get(self, request):
         address = self.get_address(request)
         if address is None:
@@ -158,6 +172,7 @@ class CheckoutPaymentView(CheckoutStepMixin, View):
             return redirect("orders:checkout_address")
 
         cod_allowed = all(i.variant.product.is_cod_available for i in self.cart.live_items())
+        options, default = self.delivery_options(address)
         return render(
             request,
             self.template_name,
@@ -166,6 +181,8 @@ class CheckoutPaymentView(CheckoutStepMixin, View):
                 "address": address,
                 "form": CheckoutPaymentForm(cod_allowed=cod_allowed),
                 "cod_allowed": cod_allowed,
+                "delivery_options": options,
+                "selected_delivery": default.code if default else "",
                 "step": 2,
             },
         )
@@ -181,6 +198,8 @@ class CheckoutPaymentView(CheckoutStepMixin, View):
 
         if not form.is_valid():
             messages.error(request, _("Please correct the errors below."))
+            # Re-quote so the redisplayed page still offers delivery choices.
+            options, _default = self.delivery_options(address)
             return render(
                 request,
                 self.template_name,
@@ -189,6 +208,8 @@ class CheckoutPaymentView(CheckoutStepMixin, View):
                     "address": address,
                     "form": form,
                     "cod_allowed": cod_allowed,
+                    "delivery_options": options,
+                    "selected_delivery": request.POST.get("shipping_method", ""),
                     "step": 2,
                 },
             )

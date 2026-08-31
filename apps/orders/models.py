@@ -5,6 +5,7 @@ snapshotted onto it at placement time so later catalog edits never rewrite
 what a customer was charged.
 """
 from datetime import timedelta
+import logging
 from decimal import ROUND_HALF_UP, Decimal
 
 from django.conf import settings
@@ -17,6 +18,8 @@ from django.utils.translation import gettext_lazy as _
 
 from apps.core.models import TimeStampedModel
 
+logger = logging.getLogger("ecommerce")
+
 ZERO = Decimal("0.00")
 
 
@@ -25,7 +28,28 @@ def money(value):
 
 
 def generate_order_number():
-    """Human-readable, non-sequential order number: ``LS-20260825-7QF3KD``."""
+    """An order number from the document series: ``MST-ORD-2026-000001``.
+
+    Spec section 61 asks for a separate, sequential series per record type.
+    Imported lazily because the invoices app holds the counter and has a
+    foreign key back to this module.
+
+    Falls back to the previous random format if the series table is not
+    reachable -- an order that cannot be numbered is an order that cannot be
+    placed, and a checkout should not fail over a counter.
+    """
+    from django.conf import settings
+
+    try:
+        from apps.invoices.models import NumberSeries
+
+        return NumberSeries.allocate(
+            NumberSeries.Kind.ORDER,
+            prefix=getattr(settings, "DOCUMENT_PREFIX", "MST"),
+        )
+    except Exception:  # pragma: no cover -- only on a broken install
+        logger.exception("Falling back to a random order number")
+
     stamp = timezone.localtime().strftime("%Y%m%d")
     for _attempt in range(10):
         candidate = f"LS-{stamp}-{get_random_string(6, 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789')}"

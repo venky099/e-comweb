@@ -65,6 +65,7 @@ LOCAL_APPS = [
     "apps.geo.apps.GeoConfig",
     "apps.tax.apps.TaxConfig",
     "apps.shipping.apps.ShippingConfig",
+    "apps.invoices.apps.InvoicesConfig",
     "apps.accounts.apps.AccountsConfig",
     "apps.catalog.apps.CatalogConfig",
     "apps.inventory.apps.InventoryConfig",
@@ -309,6 +310,11 @@ TAX_RATE_PERCENT = env.str("TAX_RATE_PERCENT", default="0.00")
 # The state the business ships from. India splits GST by destination: CGST
 # and SGST within this state, IGST outside it.
 TAX_ORIGIN_STATE = env.str("TAX_ORIGIN_STATE", default="Karnataka")
+
+# Printed on invoices (spec sections 26 and 59).
+COMPANY_ADDRESS = env.str("COMPANY_ADDRESS", default="")
+COMPANY_TAX_NUMBER = env.str("COMPANY_TAX_NUMBER", default="")
+DOCUMENT_PREFIX = env.str("DOCUMENT_PREFIX", default="MST")
 
 # Section 59: whether catalogue prices already include tax.
 PRICES_INCLUDE_TAX = env.bool("PRICES_INCLUDE_TAX", default=False)
