@@ -1187,3 +1187,10 @@ small, .small { font-size: var(--text-sm); }
 .delivery-option-body { display: flex; flex-direction: column; flex: 1 1 auto; }
 .delivery-option-name { font-weight: 600; }
 .delivery-option-price { white-space: nowrap; }
+
+/* ---- attribute facets -------------------------------------------------- */
+/* Long value lists (twelve fabrics) scroll inside the group rather than
+   pushing the rest of the sidebar off the screen. */
+.facet-values { max-height: 220px; overflow-y: auto; padding-right: 4px; }
+.facet-values::-webkit-scrollbar { width: 6px; }
+.facet-values::-webkit-scrollbar-thumb { background: var(--bs-border-color); border-radius: 3px; }

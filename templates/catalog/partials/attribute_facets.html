@@ -1,0 +1,29 @@
+{% comment %}
+  Admin-defined attribute filters (MST section 12).
+
+  Which groups appear is decided by the database, not this template: an
+  administrator adding "Neckline" gets a working filter without a deploy.
+  Only values that some product in the current listing actually carries are
+  offered, so no option leads to an empty page.
+{% endcomment %}
+{% for facet in facets.attributes %}
+  <div class="filter-group">
+    <h6>{{ facet.name }}</h6>
+    <div class="facet-values">
+      {% for option in facet.values %}
+        <div class="form-check">
+          <input class="form-check-input" type="checkbox"
+                 name="{{ facet.code }}" value="{{ option.slug }}"
+                 id="facet-{{ facet.code }}-{{ option.slug }}"
+                 data-facet-group="{{ facet.code }}" data-autosubmit
+                 {% if option.slug in selected_attributes %}checked{% endif %}>
+          <label class="form-check-label small d-flex justify-content-between"
+                 for="facet-{{ facet.code }}-{{ option.slug }}">
+            <span>{{ option.value }}</span>
+            <span class="text-body-secondary">{{ option.count }}</span>
+          </label>
+        </div>
+      {% endfor %}
+    </div>
+  </div>
+{% endfor %}

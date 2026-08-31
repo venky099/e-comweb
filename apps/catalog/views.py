@@ -6,7 +6,7 @@ from django.views.generic import DetailView, ListView
 
 from apps.reviews.models import Review
 
-from .filters import ProductFilterForm, apply_filters, apply_sorting, facet_options
+from .filters import ProductFilterForm, apply_filters, apply_sorting, facet_options, size_guide_for
 from .models import Category, Product, ProductVariant
 from .search import autocomplete_suggestions, search_products
 
@@ -54,6 +54,7 @@ class ProductListView(ListView):
         context["search_term"] = getattr(self, "search_term", "")
         context["sort_key"] = getattr(self, "sort_key", "popularity")
         context["facets"] = facet_options(self.unfiltered_queryset)
+        context["selected_attributes"] = context["filter_form"].selected_attribute_slugs
         context["categories"] = Category.objects.active().roots().order_by("sort_order", "name")
         context["active_filters"] = self.filter_form.active_filters
         context["querystring"] = self.build_querystring()
@@ -179,7 +180,18 @@ class ProductDetailView(DetailView):
         context["can_review"] = self.user_can_review(product)
         context["related_products"] = self.get_related_products(product)
         context["in_wishlist"] = self.is_in_wishlist(product)
-        context["specifications"] = list((product.specifications or {}).items())
+        # Attributes an administrator defined come first, then whatever free
+        # JSON the product carries, so the structured data leads.
+        attribute_rows = [
+            (row.attribute.name, row.display)
+            for row in product.attribute_values.select_related("attribute", "value")
+            if row.attribute.show_on_product and row.display
+        ]
+        context["specifications"] = attribute_rows + list(
+            (product.specifications or {}).items()
+        )
+        context["product_attributes"] = attribute_rows
+        context["size_guide"] = size_guide_for(product)
         return context
 
     def resolve_selected_variant(self, variants):

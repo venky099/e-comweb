@@ -121,7 +121,10 @@
 
       {% if sizes %}
         <div class="mb-3">
-          <p class="small fw-semibold mb-1">Size</p>
+          <div class="d-flex justify-content-between align-items-baseline">
+            <p class="small fw-semibold mb-1">Size</p>
+            {% include "catalog/partials/size_guide.html" %}
+          </div>
           <div class="d-flex flex-wrap gap-2">
             {% for size in sizes %}
               <button type="button" class="option-btn {% if selected_variant.size == size %}is-active{% endif %}"

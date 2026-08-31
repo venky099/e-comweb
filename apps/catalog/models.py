@@ -216,6 +216,11 @@ class Product(TimeStampedModel, SluggedModel):
     sold_count = models.PositiveIntegerField(default=0, db_index=True)
     view_count = models.PositiveIntegerField(default=0)
 
+    video_url = models.URLField(
+        blank=True,
+        help_text=_("Product video (section 5). YouTube, Vimeo or a direct file."),
+    )
+    spin_url = models.URLField(blank=True, help_text=_("Optional 360-degree view."))
     meta_title = models.CharField(max_length=255, blank=True)
     meta_description = models.CharField(max_length=320, blank=True)
     published_at = models.DateTimeField(null=True, blank=True, db_index=True)
@@ -455,3 +460,13 @@ class ProductVariant(TimeStampedModel):
     @property
     def display_image(self):
         return self.image if self.image else None
+
+
+# Attributes and size guides live in their own module for readability; Django
+# needs them importable from models.py to discover them.
+from apps.catalog.attributes import (  # noqa: E402,F401  isort:skip
+    Attribute,
+    AttributeValue,
+    ProductAttribute,
+    SizeGuide,
+)

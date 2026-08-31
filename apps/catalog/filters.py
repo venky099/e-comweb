@@ -7,10 +7,10 @@ never disagree.
 from decimal import Decimal, InvalidOperation
 
 from django import forms
-from django.db.models import Count, F, Max, Min
+from django.db.models import Count, F, Max, Min, Q
 from django.utils.translation import gettext_lazy as _
 
-from .models import Brand, Category, ProductVariant
+from .models import Attribute, AttributeValue, Brand, Category, ProductVariant
 
 SORT_OPTIONS = [
     ("relevance", _("Relevance")),
@@ -61,6 +61,50 @@ class ProductFilterForm(forms.Form):
         super().__init__(*args, **kwargs)
         self.locale = locale
 
+    def _attribute_selections(self):
+        """Read ?fabric=silk,cotton for every attribute an admin has defined.
+
+        Declared fields cannot cover these: which parameters exist is decided
+        in the database, not in this file. Unknown parameters are ignored
+        rather than erroring, so a stale bookmark still loads the page.
+        """
+        if not self.data:
+            return {}
+        codes = set(
+            Attribute.objects.filter(is_active=True, is_filterable=True).values_list(
+                "code", flat=True
+            )
+        )
+        selections = {}
+        for code in codes:
+            # Plain checkboxes post the parameter once per ticked box; a link
+            # or a bookmark may instead comma-join them. Accept both, so the
+            # sidebar needs no JavaScript to work.
+            raw = (
+                self.data.getlist(code)
+                if hasattr(self.data, "getlist")
+                else [self.data.get(code) or ""]
+            )
+            slugs = [
+                part.strip()
+                for chunk in raw
+                for part in str(chunk).split(",")
+                if part.strip()
+            ]
+            if slugs:
+                selections[code] = slugs
+        return selections
+
+    @property
+    def selected_attribute_slugs(self):
+        """Every selected attribute value, for ticking the sidebar boxes."""
+        if not self.is_valid():
+            return set()
+        picked = set()
+        for slugs in (self.cleaned_data.get("attributes") or {}).values():
+            picked.update(slugs)
+        return picked
+
     def to_base(self, value):
         """Convert a visitor-entered amount into the base currency."""
         rate = getattr(self.locale, "rate", None)
@@ -98,6 +142,9 @@ class ProductFilterForm(forms.Form):
         # A reversed range is a user slip, not an error worth a red box.
         if low is not None and high is not None and low > high:
             cleaned["min_price"], cleaned["max_price"] = high, low
+        # Attribute filters are not declared fields -- which ones exist is
+        # decided in the database -- so they are collected here.
+        cleaned["attributes"] = self._attribute_selections()
         return cleaned
 
     @property
@@ -123,6 +170,15 @@ class ProductFilterForm(forms.Form):
             chips.append(("color", _("Colour"), data["color"]))
         if data.get("availability"):
             chips.append(("availability", _("Availability"), data["availability"]))
+        for code, slugs in (data.get("attributes") or {}).items():
+            attribute = Attribute.objects.filter(code=code).first()
+            label = attribute.name if attribute else code.title()
+            names = list(
+                AttributeValue.objects.filter(
+                    attribute__code=code, slug__in=slugs
+                ).values_list("value", flat=True)
+            )
+            chips.append((code, label, ", ".join(names) or ", ".join(slugs)))
         return chips
 
 
@@ -164,7 +220,21 @@ def apply_filters(queryset, data):
     elif availability == "on_sale":
         queryset = queryset.filter(compare_at_price__gt=F("price"))
 
-    if sizes or colors or availability == "in_stock":
+    # Attribute filters arrive as ?fabric=silk,cotton -- one query parameter
+    # per attribute, whatever the administrator has defined.
+    attribute_filters = data.get("attributes") or {}
+    for code, slugs in attribute_filters.items():
+        if not slugs:
+            continue
+        # Values of the *same* attribute widen the result (silk OR cotton);
+        # different attributes narrow it (silk AND festive). Chaining one
+        # filter() per attribute is what produces that.
+        queryset = queryset.filter(
+            attribute_values__attribute__code=code,
+            attribute_values__value__slug__in=slugs,
+        )
+
+    if sizes or colors or attribute_filters or availability == "in_stock":
         queryset = queryset.distinct()
 
     return queryset
@@ -218,6 +288,55 @@ def facet_options(base_queryset):
         "brands": brands,
         "sizes": sizes,
         "colors": colors,
+        "attributes": attribute_facets(product_ids),
         "price_min": price_range["low"] or 0,
         "price_max": price_range["high"] or 0,
     }
+
+
+def attribute_facets(product_ids):
+    """Filterable attributes, with only the values these products actually use.
+
+    Offering a value nothing matches is a dead end -- the shopper picks it and
+    gets an empty page -- so values with no products are left out.
+    """
+    facets = []
+    attributes = (
+        Attribute.objects.filter(is_active=True, is_filterable=True)
+        .prefetch_related("values")
+        .order_by("sort_order", "name")
+    )
+    for attribute in attributes:
+        values = list(
+            AttributeValue.objects.filter(
+                attribute=attribute, products__product_id__in=product_ids
+            )
+            .annotate(count=Count("products", distinct=True))
+            .order_by("sort_order", "value")
+            .values("value", "slug", "count")[:40]
+        )
+        if values:
+            facets.append(
+                {"name": attribute.name, "code": attribute.code, "values": values}
+            )
+    return facets
+
+
+def size_guide_for(product):
+    """The most specific active size guide for a product, or None.
+
+    A brand's own guide beats its category's, because sizing varies more
+    between brands than between garment types. A guide with no rows is
+    treated as absent -- an empty table reads as a broken page.
+    """
+    from apps.catalog.models import SizeGuide
+
+    candidates = SizeGuide.objects.filter(is_active=True).filter(
+        Q(brand_id=product.brand_id, brand__isnull=False)
+        | Q(category_id__in=[product.category_id], category__isnull=False)
+    )
+    ranked = sorted(
+        (g for g in candidates if g.is_usable),
+        key=lambda g: 0 if g.brand_id else 1,
+    )
+    return ranked[0] if ranked else None

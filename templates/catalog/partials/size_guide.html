@@ -1,0 +1,51 @@
+{% comment %}
+  Size guide (MST spec section 14).
+
+  Shown in a modal rather than inline: it is reference material a shopper
+  consults once while choosing a size, not something to push the buy button
+  further down the page.
+{% endcomment %}
+{% if size_guide %}
+  <button type="button" class="btn btn-link btn-sm p-0 size-guide-link"
+          data-bs-toggle="modal" data-bs-target="#size-guide-modal">
+    <i class="bi bi-rulers me-1"></i>Size guide
+  </button>
+
+  <div class="modal fade" id="size-guide-modal" tabindex="-1"
+       aria-labelledby="size-guide-title" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="size-guide-title">{{ size_guide.name }}</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <div class="table-responsive">
+            <table class="table table-sm align-middle mb-0">
+              <thead>
+                <tr>
+                  {% for column in size_guide.columns %}
+                    <th scope="col">{{ column }}</th>
+                  {% endfor %}
+                </tr>
+              </thead>
+              <tbody>
+                {% for row in size_guide.rows %}
+                  <tr>
+                    {% for cell in row %}
+                      {% if forloop.first %}<th scope="row">{{ cell }}</th>{% else %}<td>{{ cell }}</td>{% endif %}
+                    {% endfor %}
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+          <p class="small text-body-secondary mt-3 mb-0">
+            Measurements in {{ size_guide.unit }}.
+            {% if size_guide.note %}{{ size_guide.note }}{% endif %}
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+{% endif %}

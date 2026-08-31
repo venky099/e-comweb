@@ -13,7 +13,7 @@ from apps.audit.mixins import AuditedModelAdmin
 from apps.core.admin import ExportCsvMixin, badge, thumbnail
 from apps.inventory.models import Inventory
 
-from .models import Brand, Category, Product, ProductImage, ProductVariant
+from .models import Brand, Category, Product, ProductImage, ProductVariant, Attribute, AttributeValue, SizeGuide
 
 
 class ProductImageInline(admin.TabularInline):
@@ -396,3 +396,44 @@ class ProductImageAdmin(admin.ModelAdmin):
     @admin.display(description=_("Preview"))
     def preview(self, obj):
         return thumbnail(obj.image, 48)
+
+
+class AttributeValueInline(admin.TabularInline):
+    model = AttributeValue
+    extra = 1
+    prepopulated_fields = {"slug": ("value",)}
+
+
+@admin.register(Attribute)
+class AttributeAdmin(AuditedModelAdmin, admin.ModelAdmin):
+    list_display = ("name", "code", "kind", "value_count", "is_filterable", "show_on_product", "sort_order", "is_active")
+    list_filter = ("kind", "is_filterable", "is_active")
+    search_fields = ("name", "code")
+    list_editable = ("is_filterable", "show_on_product", "sort_order", "is_active")
+    prepopulated_fields = {"code": ("name",)}
+    filter_horizontal = ("categories",)
+    inlines = [AttributeValueInline]
+
+    @admin.display(description=_("Values"))
+    def value_count(self, obj):
+        return obj.values.count()
+
+
+@admin.register(AttributeValue)
+class AttributeValueAdmin(admin.ModelAdmin):
+    list_display = ("value", "attribute", "slug", "sort_order")
+    list_filter = ("attribute",)
+    search_fields = ("value", "slug")
+    autocomplete_fields = ("attribute",)
+
+
+@admin.register(SizeGuide)
+class SizeGuideAdmin(AuditedModelAdmin, admin.ModelAdmin):
+    list_display = ("name", "category", "brand", "unit", "row_count", "is_active")
+    list_filter = ("is_active", "category", "brand")
+    search_fields = ("name",)
+    autocomplete_fields = ("category", "brand")
+
+    @admin.display(description=_("Rows"))
+    def row_count(self, obj):
+        return len(obj.rows or [])

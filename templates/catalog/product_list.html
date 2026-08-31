@@ -112,6 +112,8 @@
             <button class="btn btn-sm btn-outline-primary w-100 mt-2" type="submit">Apply price</button>
           </div>
 
+          {% include "catalog/partials/attribute_facets.html" %}
+
           <div class="filter-group">
             <h6>Customer rating</h6>
             {% for stars in "4321" %}
