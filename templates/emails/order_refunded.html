@@ -1,0 +1,6 @@
+{% extends "emails/_base_email.html" %}
+{% block content %}
+  <p style="font-size:16px;font-weight:600;margin:0 0 10px;">Refund complete</p>
+  <p style="margin:0 0 10px;">The refund for order <strong>{{ order.order_number }}</strong> has been processed.</p>
+  <p style="margin:0 0 10px;color:#4a515e;">It can take a few working days to appear.</p>
+{% endblock %}

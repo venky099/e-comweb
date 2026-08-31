@@ -1,0 +1,6 @@
+{% extends "emails/_base_email.html" %}
+{% block content %}
+  <p style="font-size:16px;font-weight:600;margin:0 0 10px;">Your order is on its way</p>
+  <p style="margin:0 0 10px;">Order <strong>{{ order.order_number }}</strong> has been dispatched.</p>
+  <p style="margin:0 0 10px;color:#4a515e;">{% if order.shipping_method_name %}Sent by {{ order.shipping_method_name }}.{% endif %}</p>
+{% endblock %}

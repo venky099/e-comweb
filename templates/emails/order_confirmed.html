@@ -1,0 +1,6 @@
+{% extends "emails/_base_email.html" %}
+{% block content %}
+  <p style="font-size:16px;font-weight:600;margin:0 0 10px;">Your order is confirmed</p>
+  <p style="margin:0 0 10px;">We have your order <strong>{{ order.order_number }}</strong> and are getting it ready.</p>
+  <p style="margin:0 0 10px;color:#4a515e;">Estimated delivery {{ order.estimated_delivery|date:'j M Y' }}.</p>
+{% endblock %}

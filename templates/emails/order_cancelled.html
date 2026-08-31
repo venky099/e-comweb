@@ -1,0 +1,6 @@
+{% extends "emails/_base_email.html" %}
+{% block content %}
+  <p style="font-size:16px;font-weight:600;margin:0 0 10px;">Order cancelled</p>
+  <p style="margin:0 0 10px;">Order <strong>{{ order.order_number }}</strong> has been cancelled.</p>
+  <p style="margin:0 0 10px;color:#4a515e;">Any payment will be refunded to the original method.</p>
+{% endblock %}

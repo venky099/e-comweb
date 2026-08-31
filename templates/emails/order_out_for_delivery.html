@@ -1,0 +1,6 @@
+{% extends "emails/_base_email.html" %}
+{% block content %}
+  <p style="font-size:16px;font-weight:600;margin:0 0 10px;">Arriving today</p>
+  <p style="margin:0 0 10px;">Order <strong>{{ order.order_number }}</strong> is out for delivery.</p>
+  <p style="margin:0 0 10px;color:#4a515e;">Someone may need to be there to receive it.</p>
+{% endblock %}
