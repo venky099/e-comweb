@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% load money %}
+{% block title %}{{ post.meta_title|default:post.title }}{% endblock %}
+{% block meta_description %}{{ post.meta_description|default:post.excerpt }}{% endblock %}
+
+{% block content %}
+<article class="container-xxl py-4">
+  <div class="row justify-content-center">
+    <div class="col-lg-8">
+      <a href="{% url 'cms:post_list' %}" class="small text-body-secondary d-inline-block mb-2">
+        <i class="bi bi-arrow-left me-1"></i>Journal
+      </a>
+
+      {% if post.category %}<p class="post-kicker">{{ post.category.name }}</p>{% endif %}
+      <h1 class="h3 mb-2">{{ post.title }}</h1>
+      <p class="text-body-secondary small">
+        {{ post.published_at|date:"j F Y" }}
+        {% if post.author_label %} &middot; {{ post.author_label }}{% endif %}
+      </p>
+
+      {% if post.cover_image %}
+        <img src="{{ post.cover_image.url }}" alt="{{ post.title }}" class="img-fluid rounded-3 my-3">
+      {% endif %}
+
+      <div class="post-content">{{ post.body|safe }}</div>
+
+      {% if post.tag_list %}
+        <div class="chip-row mt-4">
+          {% for tag in post.tag_list %}<span class="chip">{{ tag }}</span>{% endfor %}
+        </div>
+      {% endif %}
+
+      {% if post.products.all %}
+        <section class="mt-5">
+          <h2 class="h6 mb-3">Shop this story</h2>
+          <div class="row g-3">
+            {% for product in post.products.all %}
+              <div class="col-6 col-md-3">{% include "partials/product_card.html" %}</div>
+            {% endfor %}
+          </div>
+        </section>
+      {% endif %}
+
+      {% if related %}
+        <section class="mt-5">
+          <h2 class="h6 mb-3">More like this</h2>
+          <ul class="list-unstyled">
+            {% for item in related %}
+              <li class="mb-2"><a href="{{ item.get_absolute_url }}">{{ item.title }}</a></li>
+            {% endfor %}
+          </ul>
+        </section>
+      {% endif %}
+    </div>
+  </div>
+</article>
+{% endblock %}

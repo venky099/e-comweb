@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% block title %}{% if category %}{{ category.name }}{% else %}Journal{% endif %}{% endblock %}
+
+{% block content %}
+<div class="container-xxl py-4">
+  <div class="section-head mb-4">
+    <h1 class="h4 mb-1">{% if category %}{{ category.name }}{% else %}Journal{% endif %}</h1>
+    <p class="text-body-secondary small mb-0">
+      {% if category and category.description %}{{ category.description }}
+      {% else %}Lookbooks, fabric guides and styling notes.{% endif %}
+    </p>
+  </div>
+
+  {% if categories %}
+    <div class="chip-row mb-4">
+      <a href="{% url 'cms:post_list' %}" class="chip {% if not category %}is-active{% endif %}">All</a>
+      {% for item in categories %}
+        <a href="{{ item.get_absolute_url }}"
+           class="chip {% if category.pk == item.pk %}is-active{% endif %}">{{ item.name }}</a>
+      {% endfor %}
+    </div>
+  {% endif %}
+
+  {% if posts %}
+    <div class="row g-4">
+      {% for post in posts %}
+        <div class="col-12 col-sm-6 col-lg-4">
+          <article class="post-card h-100">
+            <a href="{{ post.get_absolute_url }}" class="post-cover">
+              {% if post.cover_image %}
+                <img src="{{ post.cover_image.url }}" alt="{{ post.title }}" loading="lazy">
+              {% else %}
+                <span class="post-cover-fallback"><i class="bi bi-journal-text"></i></span>
+              {% endif %}
+            </a>
+            <div class="post-body">
+              {% if post.category %}<span class="post-kicker">{{ post.category.name }}</span>{% endif %}
+              <h2 class="h6 mb-1"><a href="{{ post.get_absolute_url }}">{{ post.title }}</a></h2>
+              <p class="small text-body-secondary mb-2">{{ post.excerpt }}</p>
+              <p class="small text-body-secondary mb-0">
+                {{ post.published_at|date:"j M Y" }}
+                {% if post.author_label %} &middot; {{ post.author_label }}{% endif %}
+                {% if post.is_scheduled %}<span class="badge bg-warning text-dark ms-1">Scheduled</span>{% endif %}
+                {% if not post.is_published %}<span class="badge bg-secondary ms-1">Draft</span>{% endif %}
+              </p>
+            </div>
+          </article>
+        </div>
+      {% endfor %}
+    </div>
+
+    {% include "partials/pagination.html" %}
+  {% else %}
+    <p class="text-body-secondary">Nothing published yet.</p>
+  {% endif %}
+</div>
+{% endblock %}

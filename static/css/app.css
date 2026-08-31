@@ -1210,3 +1210,30 @@ small, .small { font-size: var(--text-sm); }
 .ticket-message.is-staff { background: var(--brand-soft); margin-left: 24px; }
 .ticket-message.is-note { border-style: dashed; opacity: .85; }
 .ticket-body { white-space: pre-wrap; }
+
+/* ---- journal ----------------------------------------------------------- */
+.post-card {
+  display: flex; flex-direction: column;
+  border: 1px solid var(--bs-border-color);
+  border-radius: 12px; overflow: hidden; background: var(--bs-body-bg);
+  transition: border-color .15s ease, transform .15s ease;
+}
+.post-card:hover { border-color: var(--brand); transform: translateY(-2px); }
+.post-cover { display: block; aspect-ratio: 3 / 2; overflow: hidden; background: var(--surface-2, #eee); }
+.post-cover img { width: 100%; height: 100%; object-fit: cover; }
+.post-cover-fallback {
+  display: flex; align-items: center; justify-content: center;
+  width: 100%; height: 100%; font-size: 2rem; color: var(--bs-secondary-color);
+}
+.post-body { padding: 14px 16px 16px; }
+.post-kicker {
+  font-size: 11px; letter-spacing: .1em; text-transform: uppercase;
+  color: var(--brand); margin-bottom: 4px;
+}
+.post-body h2 a { color: inherit; text-decoration: none; }
+.post-body h2 a:hover { color: var(--brand); }
+
+/* Long-form body copy gets a narrower measure than the page grid. */
+.post-content { max-width: 68ch; line-height: 1.75; }
+.post-content > * + * { margin-top: 1rem; }
+.post-content img { max-width: 100%; border-radius: 10px; }
