@@ -1,9 +1,15 @@
 """Inventory service-layer behaviour."""
 from django.test import TestCase
 
-from apps.core.tests.factories import create_product, create_staff, variant_of
+from apps.core.tests.factories import (
+    create_category,
+    create_product,
+    create_staff,
+    create_variant,
+    variant_of,
+)
 from apps.inventory import services
-from apps.inventory.models import Inventory, StockMovement
+from apps.inventory.models import Inventory, StockMovement, Warehouse
 
 
 class InventoryModelTests(TestCase):
@@ -180,3 +186,67 @@ class LowStockQuerysetTests(TestCase):
         services.reserve(variant, 5)
 
         self.assertEqual(Inventory.objects.out_of_stock().count(), 1)
+
+
+class WarehouseTests(TestCase):
+    """Section 32: stock has a place, and five buckets rather than two."""
+
+    def setUp(self):
+        category = create_category(name="Sarees")
+        product = create_product(category=category, name="Silk Saree")
+        self.variant = create_variant(product, stock=20)
+
+    def test_only_one_warehouse_can_be_the_default(self):
+        first = Warehouse.objects.create(code="a", name="A", is_default=True)
+        second = Warehouse.objects.create(code="b", name="B", is_default=True)
+        first.refresh_from_db()
+        self.assertFalse(first.is_default)
+        self.assertEqual(Warehouse.default(), second)
+
+    def test_the_default_falls_back_to_the_first_active_one(self):
+        Warehouse.objects.create(code="a", name="A", priority=5)
+        best = Warehouse.objects.create(code="b", name="B", priority=1)
+        self.assertEqual(Warehouse.default(), best)
+
+    def test_an_accepted_return_counts_in_its_own_bucket(self):
+        services.commit(self.variant, 3)
+        services.restore(
+            self.variant, 2, reason=StockMovement.Reason.RETURN, reference="R-1"
+        )
+        inventory = Inventory.objects.get(variant=self.variant)
+        self.assertEqual(inventory.quantity_returned, 2)
+
+    def test_a_cancellation_is_not_a_return(self):
+        """The goods never left, so nothing came back."""
+        services.commit(self.variant, 3)
+        services.restore(self.variant, 3, reason=StockMovement.Reason.CANCELLATION)
+        inventory = Inventory.objects.get(variant=self.variant)
+        self.assertEqual(inventory.quantity_returned, 0)
+
+    def test_writing_off_damage_removes_it_from_sellable_stock(self):
+        services.write_off(self.variant, 4, note="Water damage")
+        inventory = Inventory.objects.get(variant=self.variant)
+        self.assertEqual(inventory.quantity_damaged, 4)
+        self.assertEqual(inventory.quantity_available, 16)
+        self.assertEqual(inventory.sellable_quantity, 16)
+
+    def test_damage_is_logged_as_a_movement(self):
+        services.write_off(self.variant, 2)
+        movement = StockMovement.objects.filter(
+            variant=self.variant, reason=StockMovement.Reason.DAMAGE
+        ).first()
+        self.assertIsNotNone(movement)
+        self.assertEqual(movement.quantity, -2)
+
+    def test_writing_off_more_than_exists_takes_only_what_is_there(self):
+        services.write_off(self.variant, 999)
+        inventory = Inventory.objects.get(variant=self.variant)
+        self.assertEqual(inventory.quantity_available, 0)
+        self.assertEqual(inventory.quantity_damaged, 20)
+
+    def test_reorder_level_is_the_low_stock_threshold(self):
+        inventory = Inventory.objects.get(variant=self.variant)
+        self.assertEqual(inventory.reorder_level, inventory.low_stock_threshold)
+        inventory.quantity_available = 1
+        inventory.save(update_fields=["quantity_available"])
+        self.assertTrue(inventory.needs_reorder)

@@ -10,7 +10,7 @@ from django.utils.translation import gettext_lazy as _
 from apps.core.admin import ExportCsvMixin, badge
 
 from . import services
-from .models import Inventory, StockMovement
+from .models import Inventory, StockMovement, Warehouse
 
 
 class StockLevelFilter(admin.SimpleListFilter):
@@ -194,3 +194,16 @@ class StockMovementAdmin(ExportCsvMixin, admin.ModelAdmin):
     def quantity_column(self, obj):
         colour = "#198754" if obj.quantity > 0 else "#dc3545"
         return format_html('<span style="color:{};font-weight:600">{:+d}</span>', colour, obj.quantity)
+
+
+@admin.register(Warehouse)
+class WarehouseAdmin(admin.ModelAdmin):
+    list_display = ("name", "code", "city", "country", "priority", "is_default", "is_active", "held_lines")
+    list_filter = ("is_active", "is_default", "country")
+    search_fields = ("name", "code", "city")
+    list_editable = ("priority", "is_default", "is_active")
+    prepopulated_fields = {"code": ("name",)}
+
+    @admin.display(description=_("Stock lines"))
+    def held_lines(self, obj):
+        return obj.stock.count()

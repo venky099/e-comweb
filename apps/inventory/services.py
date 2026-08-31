@@ -122,17 +122,51 @@ def restore(variant, quantity, reason=None, reference="", user=None):
         return None
 
     inventory = _locked_inventory(variant.pk if hasattr(variant, "pk") else variant)
+    reason = reason or StockMovement.Reason.CANCELLATION
+
     inventory.quantity_available += quantity
     inventory.quantity_sold = max(inventory.quantity_sold - quantity, 0)
     inventory.restocked_at = timezone.now()
+    fields = ["quantity_available", "quantity_sold", "restocked_at", "updated_at"]
+
+    # Section 32 asks for returned stock as its own figure. A cancellation is
+    # not a return -- the goods never left -- so only real returns count here.
+    if reason == StockMovement.Reason.RETURN:
+        inventory.quantity_returned += quantity
+        fields.append("quantity_returned")
+
+    inventory.save(update_fields=fields)
+    _log_movement(inventory, reason, quantity, reference, user=user)
+    return inventory
+
+
+@transaction.atomic
+def write_off(variant, quantity, note="", reference="", user=None):
+    """Take damaged units out of sellable stock (section 32).
+
+    Damaged goods leave availability but are not a sale, so they are counted
+    in their own bucket. Without it, breakage looks like theft in the numbers.
+    """
+    quantity = int(quantity)
+    if quantity <= 0:
+        return None
+
+    inventory = _locked_inventory(variant.pk if hasattr(variant, "pk") else variant)
+    removable = min(quantity, inventory.quantity_available)
+    if removable <= 0:
+        return inventory
+
+    inventory.quantity_available -= removable
+    inventory.quantity_damaged += removable
     inventory.save(
-        update_fields=["quantity_available", "quantity_sold", "restocked_at", "updated_at"]
+        update_fields=["quantity_available", "quantity_damaged", "updated_at"]
     )
     _log_movement(
         inventory,
-        reason or StockMovement.Reason.CANCELLATION,
-        quantity,
+        StockMovement.Reason.DAMAGE,
+        -removable,
         reference,
+        note=note,
         user=user,
     )
     return inventory
