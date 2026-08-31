@@ -63,6 +63,7 @@ THIRD_PARTY_APPS = [
 LOCAL_APPS = [
     "apps.core.apps.CoreConfig",
     "apps.geo.apps.GeoConfig",
+    "apps.tax.apps.TaxConfig",
     "apps.accounts.apps.AccountsConfig",
     "apps.catalog.apps.CatalogConfig",
     "apps.inventory.apps.InventoryConfig",
@@ -300,7 +301,16 @@ CURRENCY_SYMBOL = env("CURRENCY_SYMBOL", default="₹")
 
 DELIVERY_CHARGE = env.str("DELIVERY_CHARGE", default="49.00")
 FREE_DELIVERY_THRESHOLD = env.str("FREE_DELIVERY_THRESHOLD", default="999.00")
+# Legacy flat rate. Used only where no tax rule covers the destination and
+# the product carries no rate of its own -- see apps/tax/services.py.
 TAX_RATE_PERCENT = env.str("TAX_RATE_PERCENT", default="0.00")
+
+# The state the business ships from. India splits GST by destination: CGST
+# and SGST within this state, IGST outside it.
+TAX_ORIGIN_STATE = env.str("TAX_ORIGIN_STATE", default="Karnataka")
+
+# Section 59: whether catalogue prices already include tax.
+PRICES_INCLUDE_TAX = env.bool("PRICES_INCLUDE_TAX", default=False)
 COD_EXTRA_CHARGE = env.str("COD_EXTRA_CHARGE", default="0.00")
 MAX_CART_QUANTITY_PER_ITEM = env.int("MAX_CART_QUANTITY_PER_ITEM", default=10)
 ORDER_CANCEL_WINDOW_HOURS = env.int("ORDER_CANCEL_WINDOW_HOURS", default=24)
