@@ -39,6 +39,7 @@ class NumberSeries(TimeStampedModel):
         PAYMENT = "PAY", _("Payment")
         SHIPMENT = "SHP", _("Shipment")
         RETURN = "RET", _("Return")
+        SUPPORT = "SUP", _("Support ticket")
 
     kind = models.CharField(max_length=3, choices=Kind.choices)
     year = models.PositiveSmallIntegerField()

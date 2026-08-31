@@ -68,6 +68,7 @@ LOCAL_APPS = [
     "apps.invoices.apps.InvoicesConfig",
     "apps.audit.apps.AuditConfig",
     "apps.notifications.apps.NotificationsConfig",
+    "apps.support.apps.SupportConfig",
     "apps.accounts.apps.AccountsConfig",
     "apps.catalog.apps.CatalogConfig",
     "apps.inventory.apps.InventoryConfig",

@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+{% block title %}{{ ticket.reference }}{% endblock %}
+
+{% block content %}
+<div class="container-xxl py-4">
+  <div class="row justify-content-center">
+    <div class="col-lg-8">
+
+      <a href="{% url 'support:list' %}" class="small text-body-secondary d-inline-block mb-2">
+        <i class="bi bi-arrow-left me-1"></i>All requests
+      </a>
+
+      <div class="d-flex justify-content-between align-items-start gap-3 mb-3">
+        <div>
+          <h1 class="h5 mb-1">{{ ticket.subject }}</h1>
+          <p class="small text-body-secondary mb-0">
+            {{ ticket.reference }} &middot; {{ ticket.get_topic_display }}
+            {% if ticket.order %}
+              &middot; <a href="{{ ticket.order.get_absolute_url }}">{{ ticket.order.order_number }}</a>
+            {% endif %}
+          </p>
+        </div>
+        <span class="badge {% if ticket.is_open %}bg-primary{% else %}bg-secondary{% endif %}">
+          {{ ticket.get_status_display }}
+        </span>
+      </div>
+
+      <div class="ticket-thread mb-4">
+        {% for message in messages_list %}
+          <div class="ticket-message {% if message.is_staff_reply %}is-staff{% endif %}
+                      {% if message.is_internal_note %}is-note{% endif %}">
+            <div class="d-flex justify-content-between align-items-baseline gap-2 mb-1">
+              <span class="fw-semibold small">
+                {% if message.is_staff_reply %}Support team{% else %}{{ message.author_label|default:"You" }}{% endif %}
+                {% if message.is_internal_note %}<span class="badge bg-warning text-dark ms-1">Internal note</span>{% endif %}
+              </span>
+              <span class="small text-body-secondary">{{ message.created_at|date:"j M, H:i" }}</span>
+            </div>
+            <div class="ticket-body">{{ message.body|linebreaksbr }}</div>
+            {% if message.attachment %}
+              <a href="{{ message.attachment.url }}" class="small d-inline-block mt-2">
+                <i class="bi bi-paperclip me-1"></i>Attachment
+              </a>
+            {% endif %}
+          </div>
+        {% endfor %}
+      </div>
+
+      {% if ticket.can_reply %}
+        <form method="post" enctype="multipart/form-data" class="bg-body border rounded-3 p-3">
+          {% csrf_token %}
+          {{ form.body }}
+          {% if form.body.errors %}<div class="text-danger small mt-1">{{ form.body.errors.0 }}</div>{% endif %}
+          <div class="d-flex justify-content-between align-items-center mt-2">
+            <input type="file" name="attachment" class="form-control form-control-sm w-auto">
+            <button type="submit" class="btn btn-primary btn-sm">Send reply</button>
+          </div>
+        </form>
+      {% else %}
+        <div class="alert alert-secondary small mb-0">
+          This request is closed. <a href="{% url 'support:create' %}">Open a new one</a> if you still need help.
+        </div>
+      {% endif %}
+
+    </div>
+  </div>
+</div>
+{% endblock %}
