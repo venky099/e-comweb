@@ -353,9 +353,41 @@ class ProductVariant(TimeStampedModel):
     )
 
     image = models.ImageField(upload_to="variants/%Y/%m/", blank=True, null=True)
+
+    # Physical attributes (MST spec section 6). Shipping is quoted on the
+    # parcel, so weight belongs on the thing that actually goes in the box --
+    # a size XXL saree does not weigh what a size XS one does. Each falls
+    # back to the product's figure when left empty.
+    weight_grams = models.PositiveIntegerField(
+        blank=True,
+        null=True,
+        help_text=_("Shipping weight. Falls back to the product's weight."),
+    )
+    length_mm = models.PositiveIntegerField(blank=True, null=True)
+    width_mm = models.PositiveIntegerField(blank=True, null=True)
+    height_mm = models.PositiveIntegerField(blank=True, null=True)
+    barcode = models.CharField(
+        max_length=64,
+        blank=True,
+        db_index=True,
+        help_text=_("EAN, UPC or GTIN, as printed on the item."),
+    )
+
     is_active = models.BooleanField(default=True, db_index=True)
     is_default = models.BooleanField(default=False)
     sort_order = models.PositiveIntegerField(default=0)
+
+    @property
+    def shipping_weight_grams(self):
+        """What this variant weighs in a parcel.
+
+        Returns zero rather than None when nothing is recorded, so a rate
+        table lookup lands in the lightest band instead of raising. A quote
+        of "we do not know" is not useful at checkout.
+        """
+        if self.weight_grams:
+            return self.weight_grams
+        return getattr(self.product, "weight_grams", 0) or 0
 
     objects = ActiveManager()
 

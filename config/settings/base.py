@@ -64,6 +64,7 @@ LOCAL_APPS = [
     "apps.core.apps.CoreConfig",
     "apps.geo.apps.GeoConfig",
     "apps.tax.apps.TaxConfig",
+    "apps.shipping.apps.ShippingConfig",
     "apps.accounts.apps.AccountsConfig",
     "apps.catalog.apps.CatalogConfig",
     "apps.inventory.apps.InventoryConfig",
