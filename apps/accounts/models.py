@@ -200,3 +200,8 @@ class Address(TimeStampedModel):
             "country": self.country,
             "postal_code": self.postal_code,
         }
+
+
+# One-time sign-in codes live in their own module for readability; Django
+# needs them importable from models.py to discover them.
+from apps.accounts.otp import OneTimeCode  # noqa: E402,F401  isort:skip

@@ -1,0 +1,13 @@
+{% extends "emails/_base_email.html" %}
+{% block content %}
+  <p style="font-size:16px;font-weight:600;margin:0 0 10px;">Your sign-in code</p>
+  <p style="margin:0 0 14px;">Enter this code to sign in:</p>
+  <p style="font-size:30px;font-weight:700;letter-spacing:.18em;margin:0 0 14px;">{{ code }}</p>
+  <p style="margin:0 0 10px;color:#4a515e;">
+    It expires in {{ minutes }} minutes and can be used once.
+  </p>
+  <p style="margin:0;color:#6b7382;font-size:13px;">
+    If you did not ask to sign in, you can ignore this email. Nobody can use
+    the code without it.
+  </p>
+{% endblock %}

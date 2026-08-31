@@ -1,11 +1,13 @@
 """Authentication and customer account URLs."""
 from django.urls import path
 
-from . import views
+from . import otp_views, views
 
 app_name = "accounts"
 
 urlpatterns = [
+    path("sign-in-code/", otp_views.request_code, name="otp_request"),
+    path("sign-in-code/verify/", otp_views.verify_code, name="otp_verify"),
     # ---- auth ----
     path("register/", views.RegisterView.as_view(), name="register"),
     path("login/", views.CustomerLoginView.as_view(), name="login"),

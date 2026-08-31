@@ -9,6 +9,7 @@ from datetime import timedelta
 from pathlib import Path
 
 import environ
+from django.utils.translation import gettext_lazy as _
 from django.contrib.messages import constants as message_constants
 
 # ---------------------------------------------------------------------------
@@ -91,6 +92,9 @@ MIDDLEWARE = [
     "whitenoise.middleware.WhiteNoiseMiddleware",
     "corsheaders.middleware.CorsMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
+    # After the session, because it reads the language stored there; before
+    # CommonMiddleware, which may redirect before a language is active.
+    "django.middleware.locale.LocaleMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
@@ -165,7 +169,22 @@ LOGOUT_REDIRECT_URL = "core:home"
 # ---------------------------------------------------------------------------
 # I18N / TZ
 # ---------------------------------------------------------------------------
-LANGUAGE_CODE = "en-us"
+LANGUAGE_CODE = env.str("LANGUAGE_CODE", default="en")
+
+# Section 3 asks for a language selector. Only languages listed here are
+# offered; adding one needs a translation file, not a code change.
+LANGUAGES = [
+    ("en", _("English")),
+    ("hi", _("Hindi")),
+    ("ta", _("Tamil")),
+    ("ar", _("Arabic")),
+    ("fr", _("French")),
+]
+
+LOCALE_PATHS = [BASE_DIR / "locale"]
+
+# Right-to-left languages, so templates can flip direction.
+RTL_LANGUAGES = {"ar", "he", "fa", "ur"}
 TIME_ZONE = env("TIME_ZONE", default="Asia/Kolkata")
 USE_I18N = True
 USE_TZ = True

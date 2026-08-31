@@ -1,3 +1,4 @@
+{% load i18n %}
 {% comment %}
   Country and currency selectors (MST spec section 3).
 
@@ -53,6 +54,23 @@
         </select>
         <noscript><button class="btn btn-sm btn-outline-primary w-100 mt-2" type="submit">Set currency</button></noscript>
       </form>
+
+      {% get_current_language as CURRENT_LANGUAGE %}
+      {% get_available_languages as SITE_LANGUAGES %}
+      {% if SITE_LANGUAGES|length > 1 %}
+        <form method="post" action="{% url 'set_language' %}" class="mt-3">
+          {% csrf_token %}
+          <input type="hidden" name="next" value="{{ request.get_full_path }}">
+          <label class="form-label small fw-semibold mb-1" for="locale-language">Language</label>
+          <select class="form-select form-select-sm" name="language" id="locale-language"
+                  onchange="this.form.submit()">
+            {% for code, name in SITE_LANGUAGES %}
+              <option value="{{ code }}" {% if code == CURRENT_LANGUAGE %}selected{% endif %}>{{ name }}</option>
+            {% endfor %}
+          </select>
+          <noscript><button class="btn btn-sm btn-outline-primary w-100 mt-2" type="submit">Set language</button></noscript>
+        </form>
+      {% endif %}
 
       {% if not LOCALE.is_base_currency %}
         <p class="small text-body-secondary mt-3 mb-0">

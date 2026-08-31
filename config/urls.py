@@ -18,6 +18,9 @@ urlpatterns = [
     # ---- Server-rendered storefront ----
     path("accounts/", include("apps.accounts.urls")),
     path("locale/", include("apps.geo.urls")),
+    # Django's own language switcher: it stores the choice in the
+    # session and redirects back, which is exactly what is wanted.
+    path("i18n/", include("django.conf.urls.i18n")),
     path("products/", include("apps.catalog.urls")),
     path("cart/", include("apps.cart.urls")),
     path("wishlist/", include("apps.wishlist.urls")),
