@@ -215,3 +215,46 @@ class SelectorViewTests(TestCase):
 
     def test_get_is_not_allowed(self):
         self.assertEqual(self.client.get(reverse("geo:set_currency")).status_code, 405)
+
+
+class StorefrontCurrencyTests(TestCase):
+    """Prices on real pages must follow the selected currency.
+
+    Guards the split the money tags exist to enforce: catalogue prices
+    convert, order totals do not.
+    """
+
+    def setUp(self):
+        from apps.core.tests.factories import create_category, create_product
+
+        self.inr = make_currency("INR", "₹", base=True)
+        self.usd = make_currency("USD", "$")
+        make_rate(self.inr, self.usd, "0.01160")
+        Country.objects.create(iso2="IN", name="India", currency=self.inr)
+        Country.objects.create(iso2="US", name="United States", currency=self.usd)
+        category = create_category(name="Sarees")
+        self.product = create_product(
+            category=category, name="Designer Silk Saree", price=Decimal("5000.00")
+        )
+
+    def test_listing_shows_the_base_currency_by_default(self):
+        response = self.client.get(reverse("catalog:product_list"))
+        self.assertContains(response, "₹5,000.00")
+
+    def test_listing_converts_after_switching_currency(self):
+        self.client.post(reverse("geo:set_currency"), {"currency": "USD"})
+        response = self.client.get(reverse("catalog:product_list"))
+        self.assertContains(response, "$58.00")
+        self.assertNotContains(response, "₹5,000.00")
+
+    def test_price_filter_bounds_are_read_in_the_visitors_currency(self):
+        """Asking for "under $60" must not filter for under 60 rupees."""
+        from apps.catalog.filters import ProductFilterForm
+        from apps.geo.locale_context import resolve
+
+        request = RequestFactory().get("/")
+        request.session = {SESSION_CURRENCY: "USD"}
+        form = ProductFilterForm({"max_price": "60"}, locale=resolve(request))
+        self.assertTrue(form.is_valid())
+        # 60 USD at 0.0116 is about 5172 INR -- the 5000 product is included.
+        self.assertGreater(form.cleaned_data["max_price"], Decimal("5000"))

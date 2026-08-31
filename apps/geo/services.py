@@ -117,7 +117,7 @@ def rate_for(currency, on_date=None):
         ExchangeRate.objects.filter(
             base=base, quote=currency, effective_from__lte=moment
         )
-        .order_by("-effective_from")
+        .order_by("-effective_from", "-id")
         .first()
     )
     if row is None:

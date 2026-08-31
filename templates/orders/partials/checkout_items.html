@@ -1,3 +1,4 @@
+{% load money %}
 {% comment %}Compact basket recap shown alongside each checkout step.{% endcomment %}
 <div class="bg-body border rounded-3 p-3 mb-3">
   <h2 class="h6 mb-3">{{ summary.item_count }} item{{ summary.item_count|pluralize }} in this order</h2>
@@ -20,7 +21,7 @@
           {% if item.variant.label != "Default" %}{{ item.variant.label }} &middot; {% endif %}Qty {{ item.quantity }}
         </div>
       </div>
-      <div class="small fw-semibold">{{ CURRENCY_SYMBOL }}{{ item.line_total|floatformat:2 }}</div>
+      <div class="small fw-semibold">{% price item.line_total %}</div>
     </div>
   {% endfor %}
 </div>

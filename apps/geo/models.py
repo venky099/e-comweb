@@ -180,7 +180,10 @@ class ExchangeRate(TimeStampedModel):
     note = models.CharField(max_length=255, blank=True)
 
     class Meta:
-        ordering = ["-effective_from"]
+        # -id breaks ties: two rates recorded in the same microsecond would
+        # otherwise resolve to whichever row the database happened to return,
+        # which is a coin flip over what a customer is charged.
+        ordering = ["-effective_from", "-id"]
         indexes = [models.Index(fields=["base", "quote", "-effective_from"])]
 
     def __str__(self):

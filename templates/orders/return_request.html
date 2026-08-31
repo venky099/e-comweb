@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load money %}
 {% block title %}Return {{ item.product_name }}{% endblock %}
 
 {% block content %}
@@ -22,7 +23,7 @@
             <div class="fw-semibold">{{ item.product_name }}</div>
             <div class="small text-body-secondary">
               {% if item.variant_label %}{{ item.variant_label }} &middot; {% endif %}
-              Qty {{ item.quantity }} &middot; {{ CURRENCY_SYMBOL }}{{ item.unit_price|floatformat:2 }} each
+              Qty {{ item.quantity }} &middot; {{ item.unit_price|money_in:order.currency }} each
             </div>
           </div>
         </div>

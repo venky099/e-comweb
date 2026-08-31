@@ -1,3 +1,4 @@
+{% load money %}
 {% comment %}
 Product card used by every grid. Expects `product` (with images/variants
 prefetched by Product.objects.with_related()).
@@ -93,9 +94,9 @@ prefetched by Product.objects.with_related()).
     {% endif %}
 
     <div class="product-card-price">
-      <span class="price-now">{{ CURRENCY_SYMBOL }}{{ product.price|floatformat:2 }}</span>
+      <span class="price-now">{% price product.price %}</span>
       {% if product.has_discount %}
-        <span class="price-was">{{ CURRENCY_SYMBOL }}{{ product.compare_at_price|floatformat:2 }}</span>
+        <span class="price-was">{% price product.compare_at_price %}</span>
       {% endif %}
     </div>
 

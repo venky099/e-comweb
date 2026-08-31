@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% load humanize %}
+{% load money %}
 
 {% block title %}Reports &mdash; {{ SITE_NAME }}{% endblock %}
 
@@ -104,15 +105,15 @@
           <div class="row g-3">
             <div class="col-md-6">
               <div class="summary-row"><span>Orders counted</span><span>{{ totals.orders|intcomma }}</span></div>
-              <div class="summary-row"><span>Gross sales</span><span>{{ CURRENCY_SYMBOL }}{{ totals.gross|floatformat:2|intcomma }}</span></div>
-              <div class="summary-row"><span>Product discounts</span><span class="text-danger">&minus; {{ CURRENCY_SYMBOL }}{{ totals.product_discounts|floatformat:2|intcomma }}</span></div>
-              <div class="summary-row"><span>Coupon discounts</span><span class="text-danger">&minus; {{ CURRENCY_SYMBOL }}{{ totals.coupon_discounts|floatformat:2|intcomma }}</span></div>
+              <div class="summary-row"><span>Gross sales</span><span>{% base_price totals.gross %}</span></div>
+              <div class="summary-row"><span>Product discounts</span><span class="text-danger">&minus; {% base_price totals.product_discounts %}</span></div>
+              <div class="summary-row"><span>Coupon discounts</span><span class="text-danger">&minus; {% base_price totals.coupon_discounts %}</span></div>
             </div>
             <div class="col-md-6">
-              <div class="summary-row"><span>Delivery collected</span><span>{{ CURRENCY_SYMBOL }}{{ totals.delivery|floatformat:2|intcomma }}</span></div>
-              <div class="summary-row"><span>Tax collected</span><span>{{ CURRENCY_SYMBOL }}{{ totals.tax|floatformat:2|intcomma }}</span></div>
-              <div class="summary-row"><span>Refunds issued</span><span class="text-danger">&minus; {{ CURRENCY_SYMBOL }}{{ totals.refunds|floatformat:2|intcomma }}</span></div>
-              <div class="summary-row total"><span>Net revenue</span><span>{{ CURRENCY_SYMBOL }}{{ totals.net_after_refunds|floatformat:2|intcomma }}</span></div>
+              <div class="summary-row"><span>Delivery collected</span><span>{% base_price totals.delivery %}</span></div>
+              <div class="summary-row"><span>Tax collected</span><span>{% base_price totals.tax %}</span></div>
+              <div class="summary-row"><span>Refunds issued</span><span class="text-danger">&minus; {% base_price totals.refunds %}</span></div>
+              <div class="summary-row total"><span>Net revenue</span><span>{% base_price totals.net_after_refunds %}</span></div>
             </div>
           </div>
         </div>
@@ -156,11 +157,11 @@
                     <td class="small">{{ row.bucket|date:"d M Y" }}</td>
                     <td class="small text-end">{{ row.orders }}</td>
                     <td class="small text-end">{{ row.units }}</td>
-                    <td class="small text-end">{{ CURRENCY_SYMBOL }}{{ row.gross|floatformat:2|intcomma }}</td>
-                    <td class="small text-end text-danger">{{ CURRENCY_SYMBOL }}{{ row.discounts|floatformat:2|intcomma }}</td>
-                    <td class="small text-end">{{ CURRENCY_SYMBOL }}{{ row.delivery|floatformat:2 }}</td>
-                    <td class="small text-end">{{ CURRENCY_SYMBOL }}{{ row.tax|floatformat:2 }}</td>
-                    <td class="small text-end fw-semibold">{{ CURRENCY_SYMBOL }}{{ row.net|floatformat:2|intcomma }}</td>
+                    <td class="small text-end">{% base_price row.gross %}</td>
+                    <td class="small text-end text-danger">{% base_price row.discounts %}</td>
+                    <td class="small text-end">{% base_price row.delivery %}</td>
+                    <td class="small text-end">{% base_price row.tax %}</td>
+                    <td class="small text-end fw-semibold">{% base_price row.net %}</td>
                   </tr>
                 {% elif report == "product" %}
                   {% if kind == "low_stock" or kind == "out_of_stock" %}
@@ -177,7 +178,7 @@
                       <td class="small text-body-secondary">{{ row.sku }}</td>
                       <td class="small text-body-secondary">{{ row.product__category__name }}</td>
                       <td class="small text-end">{{ row.units_sold }}</td>
-                      <td class="small text-end fw-semibold">{{ CURRENCY_SYMBOL }}{{ row.revenue|floatformat:2|intcomma }}</td>
+                      <td class="small text-end fw-semibold">{% base_price row.revenue %}</td>
                       <td class="small text-end">{{ row.order_count }}</td>
                     </tr>
                   {% endif %}
@@ -194,7 +195,7 @@
                       <td class="small">{{ row.email }}</td>
                       <td class="small">{{ row.first_name }} {{ row.last_name }}</td>
                       <td class="small text-end">{{ row.order_count }}</td>
-                      <td class="small text-end fw-semibold">{{ CURRENCY_SYMBOL }}{{ row.lifetime_value|floatformat:2|intcomma }}</td>
+                      <td class="small text-end fw-semibold">{% base_price row.lifetime_value %}</td>
                       <td class="small text-body-secondary">{{ row.last_order|date:"d M Y"|default:"-" }}</td>
                     </tr>
                   {% endif %}

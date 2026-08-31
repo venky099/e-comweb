@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load money %}
 
 {% block title %}Pay for order {{ order.order_number }}{% endblock %}
 
@@ -15,7 +16,7 @@
 
         <div class="text-center mb-4">
           <p class="small text-body-secondary mb-1">Amount payable</p>
-          <p class="display-6 fw-bold mb-0">{{ CURRENCY_SYMBOL }}{{ order.total_amount|floatformat:2 }}</p>
+          <p class="display-6 fw-bold mb-0">{{ order.total_amount|money_in:order.currency }}</p>
         </div>
 
         {% if gateway_context.gateway == "mock" %}

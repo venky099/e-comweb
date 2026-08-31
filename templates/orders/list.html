@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load money %}
 
 {% block title %}My orders &mdash; {{ SITE_NAME }}{% endblock %}
 
@@ -35,7 +36,7 @@
         <div class="order-card-head">
           <div class="d-flex flex-wrap gap-4">
             <div class="order-meta">Order placed<strong>{{ order.placed_at|date:"d M Y" }}</strong></div>
-            <div class="order-meta">Total<strong>{{ CURRENCY_SYMBOL }}{{ order.total_amount|floatformat:2 }}</strong></div>
+            <div class="order-meta">Total<strong>{{ order.total_amount|money_in:order.currency }}</strong></div>
             <div class="order-meta">Order number<strong>{{ order.order_number }}</strong></div>
           </div>
           <div class="d-flex align-items-center gap-2">
@@ -62,7 +63,7 @@
                   {% if item.variant_label %}{{ item.variant_label }} &middot; {% endif %}Qty {{ item.quantity }}
                 </div>
               </div>
-              <div class="small fw-semibold">{{ CURRENCY_SYMBOL }}{{ item.line_total|floatformat:2 }}</div>
+              <div class="small fw-semibold">{{ item.line_total|money_in:order.currency }}</div>
             </div>
           {% endfor %}
 

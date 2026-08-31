@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load money %}
 
 {% block title %}Order {{ order.order_number }} &mdash; {{ SITE_NAME }}{% endblock %}
 
@@ -52,7 +53,7 @@
       <strong>This order was cancelled</strong>
       {% if order.cancel_reason %}<br><span class="small">{{ order.cancel_reason }}</span>{% endif %}
       {% if order.payment_status == 'refund_pending' %}
-        <br><span class="small">A refund of {{ CURRENCY_SYMBOL }}{{ order.total_amount|floatformat:2 }} is being processed.</span>
+        <br><span class="small">A refund of {{ order.total_amount|money_in:order.currency }} is being processed.</span>
       {% endif %}
     </div>
   {% endif %}
@@ -101,8 +102,8 @@
             </div>
 
             <div class="text-end">
-              <div class="fw-bold">{{ CURRENCY_SYMBOL }}{{ item.line_total|floatformat:2 }}</div>
-              <div class="small text-body-secondary">{{ CURRENCY_SYMBOL }}{{ item.unit_price|floatformat:2 }} each</div>
+              <div class="fw-bold">{{ item.line_total|money_in:order.currency }}</div>
+              <div class="small text-body-secondary">{{ item.unit_price|money_in:order.currency }} each</div>
             </div>
           </div>
         {% endfor %}
@@ -124,7 +125,7 @@
               <div class="text-end">
                 <span class="badge bg-{{ return_request.status_badge }}">{{ return_request.get_status_display }}</span>
                 <div class="small text-body-secondary mt-1">
-                  Refund {{ CURRENCY_SYMBOL }}{{ return_request.refund_amount|floatformat:2 }}
+                  Refund {{ return_request.refund_amount|money_in:order.currency }}
                 </div>
               </div>
             </div>
@@ -152,25 +153,25 @@
     <div class="col-lg-4">
       <div class="summary-card mb-3">
         <h2 class="h6 mb-3">Payment summary</h2>
-        <div class="summary-row"><span>Subtotal</span><span>{{ CURRENCY_SYMBOL }}{{ order.subtotal|floatformat:2 }}</span></div>
+        <div class="summary-row"><span>Subtotal</span><span>{{ order.subtotal|money_in:order.currency }}</span></div>
         {% if order.product_discount %}
           <div class="summary-row"><span>Product discount</span>
-            <span class="text-success">&minus; {{ CURRENCY_SYMBOL }}{{ order.product_discount|floatformat:2 }}</span></div>
+            <span class="text-success">&minus; {{ order.product_discount|money_in:order.currency }}</span></div>
         {% endif %}
         {% if order.coupon_discount %}
           <div class="summary-row"><span>Coupon {{ order.coupon_code }}</span>
-            <span class="text-success">&minus; {{ CURRENCY_SYMBOL }}{{ order.coupon_discount|floatformat:2 }}</span></div>
+            <span class="text-success">&minus; {{ order.coupon_discount|money_in:order.currency }}</span></div>
         {% endif %}
         <div class="summary-row"><span>Delivery</span>
-          {% if order.delivery_charge %}<span>{{ CURRENCY_SYMBOL }}{{ order.delivery_charge|floatformat:2 }}</span>
+          {% if order.delivery_charge %}<span>{{ order.delivery_charge|money_in:order.currency }}</span>
           {% else %}<span class="text-success">FREE</span>{% endif %}</div>
         {% if order.tax_amount %}
-          <div class="summary-row"><span>Tax</span><span>{{ CURRENCY_SYMBOL }}{{ order.tax_amount|floatformat:2 }}</span></div>
+          <div class="summary-row"><span>Tax</span><span>{{ order.tax_amount|money_in:order.currency }}</span></div>
         {% endif %}
-        <div class="summary-row total"><span>Total</span><span>{{ CURRENCY_SYMBOL }}{{ order.total_amount|floatformat:2 }}</span></div>
+        <div class="summary-row total"><span>Total</span><span>{{ order.total_amount|money_in:order.currency }}</span></div>
         {% if order.refunded_amount %}
           <div class="summary-row"><span>Refunded</span>
-            <span class="text-success">{{ CURRENCY_SYMBOL }}{{ order.refunded_amount|floatformat:2 }}</span></div>
+            <span class="text-success">{{ order.refunded_amount|money_in:order.currency }}</span></div>
         {% endif %}
 
         <hr>

@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load money %}
 
 {% block title %}Contact us &mdash; {{ SITE_NAME }}{% endblock %}
 
@@ -101,8 +102,8 @@
             </h3>
             <div id="faq4" class="accordion-collapse collapse" data-bs-parent="#faq">
               <div class="accordion-body small">
-                Delivery is free on orders over {{ CURRENCY_SYMBOL }}{{ FREE_DELIVERY_THRESHOLD }} after
-                discounts. Below that, a flat {{ CURRENCY_SYMBOL }}{{ DELIVERY_CHARGE }} applies and is
+                Delivery is free on orders over {% price FREE_DELIVERY_THRESHOLD %} after
+                discounts. Below that, a flat {% price DELIVERY_CHARGE %} applies and is
                 shown in your cart before checkout.
               </div>
             </div>

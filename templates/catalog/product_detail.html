@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% load humanize %}
+{% load money %}
 
 {% block title %}{{ product.meta_title|default:product.name }} &mdash; {{ SITE_NAME }}{% endblock %}
 {% block meta_description %}{{ product.meta_description|default:product.short_description|default:product.name }}{% endblock %}
@@ -47,7 +48,7 @@
 
     {# ---------------- buy box ---------------- #}
     <div class="col-lg-7" data-variant-root
-         data-currency="{{ CURRENCY_SYMBOL }}"
+         data-currency="{{ ACTIVE_CURRENCY.symbol }}"
          data-selected-size="{{ selected_variant.size|default:'' }}"
          data-selected-color="{{ selected_variant.color|default:'' }}">
 
@@ -78,10 +79,10 @@
 
       <div class="d-flex align-items-baseline gap-2 flex-wrap my-3">
         <span class="fs-2 fw-bold" data-price-now>
-          {{ CURRENCY_SYMBOL }}{{ selected_variant.price|default:product.price|floatformat:2 }}
+          {% price selected_variant.price|default:product.price %}
         </span>
         <span class="price-was fs-6" data-price-was {% if not product.has_discount %}hidden{% endif %}>
-          {{ CURRENCY_SYMBOL }}{{ product.compare_at_price|default_if_none:''|floatformat:2 }}
+          {% price product.compare_at_price|default_if_none:'' %}
         </span>
         <span class="badge bg-danger" data-price-off {% if not product.discount_percent %}hidden{% endif %}>
           -{{ product.discount_percent }}%
@@ -181,7 +182,7 @@
 
       {# ---- assurances ---- #}
       <div class="row g-2 small">
-        <div class="col-6 col-md-3"><i class="bi bi-truck text-primary me-1"></i>Free over {{ CURRENCY_SYMBOL }}{{ FREE_DELIVERY_THRESHOLD }}</div>
+        <div class="col-6 col-md-3"><i class="bi bi-truck text-primary me-1"></i>Free over {% price FREE_DELIVERY_THRESHOLD %}</div>
         <div class="col-6 col-md-3">
           <i class="bi bi-arrow-counterclockwise text-primary me-1"></i>
           {% if product.is_returnable %}{{ RETURN_WINDOW_DAYS }}-day returns{% else %}Non-returnable{% endif %}

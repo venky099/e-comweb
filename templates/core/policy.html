@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load money %}
 
 {% block title %}{{ page_title }} &mdash; {{ SITE_NAME }}{% endblock %}
 
@@ -29,9 +30,9 @@
         {% if policy_slug == "shipping" %}
           <h2 class="h5">Delivery charges</h2>
           <p>
-            Delivery is free on orders over {{ CURRENCY_SYMBOL }}{{ FREE_DELIVERY_THRESHOLD }} (calculated after
+            Delivery is free on orders over {% price FREE_DELIVERY_THRESHOLD %} (calculated after
             discounts). Below that threshold a flat delivery charge of
-            {{ CURRENCY_SYMBOL }}{{ DELIVERY_CHARGE }} applies. The exact charge is always shown in your cart
+            {% price DELIVERY_CHARGE %} applies. The exact charge is always shown in your cart
             before you pay.
           </p>
           <h2 class="h5 mt-4">Delivery times</h2>

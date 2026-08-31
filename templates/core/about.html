@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load money %}
 
 {% block title %}About us &mdash; {{ SITE_NAME }}{% endblock %}
 
@@ -29,8 +30,8 @@
 
         <h2 class="h5 mt-4">Delivery</h2>
         <p>
-          Orders over {{ CURRENCY_SYMBOL }}{{ FREE_DELIVERY_THRESHOLD }} ship free. Below that a flat
-          {{ CURRENCY_SYMBOL }}{{ DELIVERY_CHARGE }} delivery fee applies. Most orders arrive within
+          Orders over {% price FREE_DELIVERY_THRESHOLD %} ship free. Below that a flat
+          {% price DELIVERY_CHARGE %} delivery fee applies. Most orders arrive within
           3&ndash;5 working days, and every order gets a tracking page.
         </p>
 

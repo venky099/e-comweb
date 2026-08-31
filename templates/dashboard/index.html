@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% load humanize %}
+{% load money %}
 
 {% block title %}Staff dashboard &mdash; {{ SITE_NAME }}{% endblock %}
 
@@ -32,15 +33,15 @@
     <div class="col-6 col-lg-3">
       <div class="stat-card accent-brand">
         <p class="stat-label">Total sales</p>
-        <p class="stat-value">{{ CURRENCY_SYMBOL }}{{ stats.total_sales|floatformat:0|intcomma }}</p>
-        <p class="stat-sub">Today {{ CURRENCY_SYMBOL }}{{ stats.today_sales|floatformat:0|intcomma }}</p>
+        <p class="stat-value">{% base_price stats.total_sales 0 %}</p>
+        <p class="stat-sub">Today {% base_price stats.today_sales 0 %}</p>
       </div>
     </div>
     <div class="col-6 col-lg-3">
       <div class="stat-card accent-success">
         <p class="stat-label">This month</p>
-        <p class="stat-value">{{ CURRENCY_SYMBOL }}{{ stats.month_sales|floatformat:0|intcomma }}</p>
-        <p class="stat-sub">Avg order {{ CURRENCY_SYMBOL }}{{ stats.average_order_value|floatformat:0|intcomma }}</p>
+        <p class="stat-value">{% base_price stats.month_sales 0 %}</p>
+        <p class="stat-sub">Avg order {% base_price stats.average_order_value 0 %}</p>
       </div>
     </div>
     <div class="col-6 col-lg-3">
@@ -99,7 +100,7 @@
       <div class="stat-card accent-warning">
         <p class="stat-label">Open returns</p>
         <p class="stat-value">{{ stats.returns_pending }}</p>
-        <p class="stat-sub">{{ CURRENCY_SYMBOL }}{{ stats.refunded_total|floatformat:0|intcomma }} refunded</p>
+        <p class="stat-sub">{% base_price stats.refunded_total 0 %} refunded</p>
       </div>
     </div>
   </div>
@@ -155,13 +156,13 @@
           </a>
         </div>
         <div class="panel-body">
-          <div class="summary-row"><span>Gross sales</span><span>{{ CURRENCY_SYMBOL }}{{ revenue_report.gross|floatformat:2|intcomma }}</span></div>
-          <div class="summary-row"><span>Product discounts</span><span class="text-danger">&minus; {{ CURRENCY_SYMBOL }}{{ revenue_report.product_discounts|floatformat:2|intcomma }}</span></div>
-          <div class="summary-row"><span>Coupon discounts</span><span class="text-danger">&minus; {{ CURRENCY_SYMBOL }}{{ revenue_report.coupon_discounts|floatformat:2|intcomma }}</span></div>
-          <div class="summary-row"><span>Delivery collected</span><span>{{ CURRENCY_SYMBOL }}{{ revenue_report.delivery|floatformat:2|intcomma }}</span></div>
-          <div class="summary-row"><span>Tax</span><span>{{ CURRENCY_SYMBOL }}{{ revenue_report.tax|floatformat:2|intcomma }}</span></div>
-          <div class="summary-row"><span>Refunds</span><span class="text-danger">&minus; {{ CURRENCY_SYMBOL }}{{ revenue_report.refunds|floatformat:2|intcomma }}</span></div>
-          <div class="summary-row total"><span>Net revenue</span><span>{{ CURRENCY_SYMBOL }}{{ revenue_report.net_after_refunds|floatformat:2|intcomma }}</span></div>
+          <div class="summary-row"><span>Gross sales</span><span>{% base_price revenue_report.gross %}</span></div>
+          <div class="summary-row"><span>Product discounts</span><span class="text-danger">&minus; {% base_price revenue_report.product_discounts %}</span></div>
+          <div class="summary-row"><span>Coupon discounts</span><span class="text-danger">&minus; {% base_price revenue_report.coupon_discounts %}</span></div>
+          <div class="summary-row"><span>Delivery collected</span><span>{% base_price revenue_report.delivery %}</span></div>
+          <div class="summary-row"><span>Tax</span><span>{% base_price revenue_report.tax %}</span></div>
+          <div class="summary-row"><span>Refunds</span><span class="text-danger">&minus; {% base_price revenue_report.refunds %}</span></div>
+          <div class="summary-row total"><span>Net revenue</span><span>{% base_price revenue_report.net_after_refunds %}</span></div>
         </div>
       </div>
     </div>
@@ -182,7 +183,7 @@
                   <tr>
                     <td class="small">{{ row.product__name|truncatechars:34 }}</td>
                     <td class="small text-end text-body-secondary">{{ row.units_sold }} sold</td>
-                    <td class="small text-end fw-semibold">{{ CURRENCY_SYMBOL }}{{ row.revenue|floatformat:0|intcomma }}</td>
+                    <td class="small text-end fw-semibold">{% base_price row.revenue 0 %}</td>
                   </tr>
                 {% empty %}
                   <tr><td class="small text-body-secondary p-3">No sales recorded yet.</td></tr>
@@ -248,7 +249,7 @@
                       </a>
                     </td>
                     <td class="small">{{ order.email|truncatechars:26 }}</td>
-                    <td class="small text-end fw-semibold">{{ CURRENCY_SYMBOL }}{{ order.total_amount|floatformat:2 }}</td>
+                    <td class="small text-end fw-semibold">{% base_price order.total_amount %}</td>
                     <td><span class="badge bg-{{ order.status_badge }}">{{ order.get_status_display }}</span></td>
                     <td class="small text-body-secondary">{{ order.placed_at|date:"d M, H:i" }}</td>
                   </tr>
@@ -278,7 +279,7 @@
                   <tr>
                     <td class="small">{{ row.first_name|default:row.email|truncatechars:26 }}</td>
                     <td class="small text-body-secondary text-end">{{ row.order_count }} orders</td>
-                    <td class="small text-end fw-semibold">{{ CURRENCY_SYMBOL }}{{ row.lifetime_value|floatformat:0|intcomma }}</td>
+                    <td class="small text-end fw-semibold">{% base_price row.lifetime_value 0 %}</td>
                   </tr>
                 {% empty %}
                   <tr><td class="small text-body-secondary p-3">No customer orders yet.</td></tr>
@@ -325,7 +326,7 @@
 (function () {
   // All series come from the server's aggregate queries; the browser only draws.
   var days = {{ days }};
-  var currency = "{{ CURRENCY_SYMBOL }}";
+  var currency = "{{ BASE_CURRENCY.symbol }}";
   var palette = ["#4338ca", "#f97316", "#0ea5e9", "#16a34a", "#dc3545", "#a855f7", "#f59e0b", "#14b8a6"];
   var charts = {};
 

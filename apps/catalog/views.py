@@ -26,7 +26,9 @@ class ProductListView(ListView):
         return Product.objects.published().with_related()
 
     def get_filter_data(self):
-        form = ProductFilterForm(self.request.GET or None)
+        form = ProductFilterForm(
+            self.request.GET or None, locale=getattr(self.request, "locale", None)
+        )
         self.filter_form = form
         return form.cleaned_data if form.is_valid() else {}
 
@@ -144,13 +146,23 @@ class ProductDetailView(DetailView):
         context["colors"] = sorted(
             {(v.color, v.color_hex) for v in variants if v.color}, key=lambda c: c[0]
         )
+        # Prices go to JavaScript already converted: the page renders them
+        # beside the visitor's currency symbol, so shipping base-currency
+        # numbers would show a rupee amount with a dollar sign on it.
+        locale = getattr(self.request, "locale", None)
+
+        def shown(amount):
+            if amount in (None, ""):
+                return ""
+            return str(locale.money(amount) if locale else amount)
+
         context["variant_matrix"] = [
             {
                 "id": v.id,
                 "size": v.size,
                 "color": v.color,
-                "price": str(v.price),
-                "compare_at_price": str(v.compare_at_price or ""),
+                "price": shown(v.price),
+                "compare_at_price": shown(v.compare_at_price),
                 "discount_percent": v.discount_percent,
                 "available": v.available_quantity,
                 "label": v.label,
@@ -256,12 +268,20 @@ def variant_stock(request, pk):
         is_active=True,
         product__is_active=True,
     )
+    locale = getattr(request, "locale", None)
+
+    def shown(amount):
+        if amount in (None, ""):
+            return ""
+        return str(locale.money(amount) if locale else amount)
+
     return JsonResponse(
         {
             "id": variant.pk,
             "label": variant.label,
-            "price": str(variant.price),
-            "compare_at_price": str(variant.compare_at_price or ""),
+            "price": shown(variant.price),
+            "compare_at_price": shown(variant.compare_at_price),
+            "currency": locale.currency.code if locale else "",
             "discount_percent": variant.discount_percent,
             "available_quantity": variant.available_quantity,
             "in_stock": variant.in_stock,

@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load money %}
 
 {% block title %}Payment failed &mdash; Order {{ order.order_number }}{% endblock %}
 
@@ -26,7 +27,7 @@
 
       <div class="bg-body border rounded-3 p-3 my-4 text-start">
         <div class="summary-row"><span>Order total</span>
-          <span class="fw-bold">{{ CURRENCY_SYMBOL }}{{ order.total_amount|floatformat:2 }}</span></div>
+          <span class="fw-bold">{{ order.total_amount|money_in:order.currency }}</span></div>
         <div class="summary-row"><span>Items</span><span>{{ order.item_count }}</span></div>
         <div class="summary-row"><span>Status</span>
           <span><span class="badge bg-{{ order.status_badge }}">{{ order.get_status_display }}</span></span></div>

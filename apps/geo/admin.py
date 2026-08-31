@@ -28,7 +28,7 @@ class CurrencyAdmin(admin.ModelAdmin):
         if obj.is_base:
             return _("base")
         row = (
-            ExchangeRate.objects.filter(quote=obj).order_by("-effective_from").first()
+            ExchangeRate.objects.filter(quote=obj).order_by("-effective_from", "-id").first()
         )
         return row.rate if row else _("none recorded")
 

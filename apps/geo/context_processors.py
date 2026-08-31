@@ -12,4 +12,7 @@ def locale(request):
         "ACTIVE_COUNTRY": current.country,
         "AVAILABLE_CURRENCIES": services.active_currencies(),
         "AVAILABLE_COUNTRIES": services.active_countries(),
+        # Staff reporting is company accounting and stays in the base
+        # currency whatever the viewer is browsing in.
+        "BASE_CURRENCY": services.display_currency(),
     }

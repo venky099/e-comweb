@@ -1,3 +1,4 @@
+{% load money %}
 {% comment %}
 Order summary. Every number here is read from Cart.as_summary(), which is
 computed on the server; the template does no arithmetic of its own.
@@ -8,13 +9,13 @@ Set `checkout_mode` to hide the coupon form on the payment step.
 
   <div class="summary-row">
     <span>Subtotal ({{ summary.item_count }} item{{ summary.item_count|pluralize }})</span>
-    <span>{{ CURRENCY_SYMBOL }}{{ summary.mrp_total|floatformat:2 }}</span>
+    <span>{% price summary.mrp_total %}</span>
   </div>
 
   {% if summary.product_discount %}
     <div class="summary-row">
       <span>Product discount</span>
-      <span class="text-success">&minus; {{ CURRENCY_SYMBOL }}{{ summary.product_discount|floatformat:2 }}</span>
+      <span class="text-success">&minus; {% price summary.product_discount %}</span>
     </div>
   {% endif %}
 
@@ -23,14 +24,14 @@ Set `checkout_mode` to hide the coupon form on the payment step.
       <span>
         Coupon <span class="coupon-chip ms-1">{{ summary.coupon_code }}</span>
       </span>
-      <span class="text-success">&minus; {{ CURRENCY_SYMBOL }}{{ summary.coupon_discount|floatformat:2 }}</span>
+      <span class="text-success">&minus; {% price summary.coupon_discount %}</span>
     </div>
   {% endif %}
 
   <div class="summary-row">
     <span>Delivery</span>
     {% if summary.delivery_charge %}
-      <span>{{ CURRENCY_SYMBOL }}{{ summary.delivery_charge|floatformat:2 }}</span>
+      <span>{% price summary.delivery_charge %}</span>
     {% else %}
       <span class="text-success">FREE</span>
     {% endif %}
@@ -39,24 +40,24 @@ Set `checkout_mode` to hide the coupon form on the payment step.
   {% if summary.tax_amount %}
     <div class="summary-row">
       <span>Tax</span>
-      <span>{{ CURRENCY_SYMBOL }}{{ summary.tax_amount|floatformat:2 }}</span>
+      <span>{% price summary.tax_amount %}</span>
     </div>
   {% endif %}
 
   <div class="summary-row total">
     <span>Total</span>
-    <span>{{ CURRENCY_SYMBOL }}{{ summary.total|floatformat:2 }}</span>
+    <span>{% price summary.total %}</span>
   </div>
 
   {% if summary.total_savings %}
     <p class="small text-success mb-0 mt-2">
-      <i class="bi bi-piggy-bank me-1"></i>You save {{ CURRENCY_SYMBOL }}{{ summary.total_savings|floatformat:2 }} on this order
+      <i class="bi bi-piggy-bank me-1"></i>You save {% price summary.total_savings %} on this order
     </p>
   {% endif %}
 
   {% if summary.free_delivery_shortfall %}
     <div class="alert alert-info small mt-3 mb-0 py-2">
-      Add {{ CURRENCY_SYMBOL }}{{ summary.free_delivery_shortfall|floatformat:2 }} more for free delivery.
+      Add {% price summary.free_delivery_shortfall %} more for free delivery.
     </div>
   {% endif %}
 

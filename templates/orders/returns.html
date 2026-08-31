@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load money %}
 {% block title %}Returns &amp; refunds &mdash; {{ SITE_NAME }}{% endblock %}
 
 {% block content %}
@@ -36,7 +37,7 @@
                 <td class="text-center small">{{ return_request.quantity }}</td>
                 <td class="small">{{ return_request.get_reason_display }}</td>
                 <td class="text-end small fw-semibold">
-                  {{ CURRENCY_SYMBOL }}{{ return_request.refund_amount|floatformat:2 }}
+                  {{ return_request.refund_amount|money_in:order.currency }}
                 </td>
                 <td>
                   <span class="badge bg-{{ return_request.status_badge }}">

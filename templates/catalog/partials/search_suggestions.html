@@ -1,3 +1,4 @@
+{% load money %}
 {% if term|length >= 2 %}
   {% if categories %}
     <p class="suggestion-heading mb-0">Categories</p>
@@ -22,7 +23,7 @@
           <span class="d-block small fw-semibold">{{ product.name|truncatechars:52 }}</span>
           {% if product.brand %}<span class="d-block text-body-secondary" style="font-size:.75rem">{{ product.brand.name }}</span>{% endif %}
         </span>
-        <span class="fw-semibold small">{{ CURRENCY_SYMBOL }}{{ product.price|floatformat:2 }}</span>
+        <span class="fw-semibold small">{% price product.price %}</span>
       </a>
     {% endfor %}
     <a class="suggestion-row justify-content-center small fw-semibold border-top"

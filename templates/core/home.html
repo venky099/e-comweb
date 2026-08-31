@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% load humanize %}
+{% load money %}
 
 {% block title %}{{ SITE_NAME }} &mdash; {{ SITE_TAGLINE }}{% endblock %}
 
@@ -70,7 +71,7 @@
   <div class="value-props row g-3 reveal-stagger">
     <div class="col-6 col-lg-3">
       <div class="value-prop"><i class="bi bi-truck"></i>
-        <div><strong>Free delivery</strong><span>On orders over {{ CURRENCY_SYMBOL }}{{ FREE_DELIVERY_THRESHOLD }}</span></div>
+        <div><strong>Free delivery</strong><span>On orders over {% price FREE_DELIVERY_THRESHOLD %}</span></div>
       </div>
     </div>
     <div class="col-6 col-lg-3">
@@ -142,8 +143,8 @@
           <div class="flash-item-body">
             <h4>{{ item.variant.product.name|truncatechars:44 }}</h4>
             <div class="product-card-price">
-              <span class="price-now">{{ CURRENCY_SYMBOL }}{{ item.sale_price|floatformat:2 }}</span>
-              <span class="price-was">{{ CURRENCY_SYMBOL }}{{ item.variant.price|floatformat:2 }}</span>
+              <span class="price-now">{% price item.sale_price %}</span>
+              <span class="price-was">{% price item.variant.price %}</span>
               {% if item.discount_percent %}<span class="badge bg-danger">-{{ item.discount_percent }}%</span>{% endif %}
             </div>
             {% if item.quantity_limit %}
@@ -185,7 +186,7 @@
             {{ coupon.code }} <i class="bi bi-clipboard"></i>
           </div>
           {% if coupon.min_order_value %}
-            <p class="small text-body-secondary mb-0">On orders over {{ CURRENCY_SYMBOL }}{{ coupon.min_order_value|floatformat:0 }}</p>
+            <p class="small text-body-secondary mb-0">On orders over {% price coupon.min_order_value 0 %}</p>
           {% endif %}
         </div>
       </div>

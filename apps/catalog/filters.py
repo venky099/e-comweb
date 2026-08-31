@@ -34,7 +34,14 @@ SORT_EXPRESSIONS = {
 
 
 class ProductFilterForm(forms.Form):
-    """Bound to ``request.GET``; every field is optional."""
+    """Bound to ``request.GET``; every field is optional.
+
+    Prices are entered in whatever currency the visitor is browsing in, but
+    products are stored in the base currency, so the bounds are converted
+    back before they reach the query. Without that, someone browsing in
+    dollars who asks for "under 100" would silently be filtering for under
+    100 rupees.
+    """
 
     q = forms.CharField(required=False, label=_("Search"))
     category = forms.CharField(required=False)
@@ -50,6 +57,23 @@ class ProductFilterForm(forms.Form):
     )
     sort = forms.ChoiceField(required=False, choices=SORT_OPTIONS)
 
+    def __init__(self, *args, locale=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.locale = locale
+
+    def to_base(self, value):
+        """Convert a visitor-entered amount into the base currency."""
+        rate = getattr(self.locale, "rate", None)
+        if not rate or Decimal(rate) == 1:
+            return value
+        return (Decimal(value) / Decimal(rate)).quantize(Decimal("0.01"))
+
+    def for_display(self, value):
+        """Render a stored base amount the way the visitor entered it."""
+        if self.locale is None:
+            return value
+        return self.locale.display(value)
+
     def clean_min_price(self):
         return self._clean_price("min_price")
 
@@ -64,7 +88,9 @@ class ProductFilterForm(forms.Form):
             value = Decimal(value)
         except (TypeError, InvalidOperation):
             return None
-        return value if value >= 0 else None
+        if value < 0:
+            return None
+        return self.to_base(value)
 
     def clean(self):
         cleaned = super().clean()
@@ -86,9 +112,9 @@ class ProductFilterForm(forms.Form):
         if data.get("brand"):
             chips.append(("brand", _("Brand"), data["brand"]))
         if data.get("min_price") is not None:
-            chips.append(("min_price", _("Min price"), data["min_price"]))
+            chips.append(("min_price", _("Min price"), self.for_display(data["min_price"])))
         if data.get("max_price") is not None:
-            chips.append(("max_price", _("Max price"), data["max_price"]))
+            chips.append(("max_price", _("Max price"), self.for_display(data["max_price"])))
         if data.get("rating"):
             chips.append(("rating", _("Rating"), f"{data['rating']}+ stars"))
         if data.get("size"):

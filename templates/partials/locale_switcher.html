@@ -1,0 +1,65 @@
+{% comment %}
+  Country and currency selectors (MST spec section 3).
+
+  Both are forms rather than links: switching currency changes every price on
+  the site, so it goes through POST and CSRF rather than being reachable from
+  a crafted URL. Each submits back to the current page.
+{% endcomment %}
+{% if AVAILABLE_COUNTRIES %}
+  <div class="dropdown locale-switcher">
+    <button class="btn btn-link nav-icon-btn dropdown-toggle" data-bs-toggle="dropdown"
+            aria-expanded="false" aria-label="Country and currency"
+            title="Shopping in {{ ACTIVE_COUNTRY.name }} &middot; {{ ACTIVE_CURRENCY.code }}">
+      <i class="bi bi-globe2"></i>
+      <span class="d-none d-lg-inline small ms-1">{{ ACTIVE_CURRENCY.code }}</span>
+    </button>
+
+    <div class="dropdown-menu dropdown-menu-end locale-menu p-3">
+      {% if LOCALE.detected %}
+        <p class="small text-body-secondary mb-2">
+          We detected your location as <strong>{{ ACTIVE_COUNTRY.name }}</strong>.
+          Change it below if that is wrong.
+        </p>
+      {% endif %}
+
+      <form method="post" action="{% url 'geo:set_country' %}" class="mb-3">
+        {% csrf_token %}
+        <input type="hidden" name="next" value="{{ request.get_full_path }}">
+        <label class="form-label small fw-semibold mb-1" for="locale-country">Country</label>
+        <select class="form-select form-select-sm" name="country" id="locale-country"
+                onchange="this.form.submit()">
+          {% for country in AVAILABLE_COUNTRIES %}
+            <option value="{{ country.iso2 }}"
+                    {% if country.pk == ACTIVE_COUNTRY.pk %}selected{% endif %}>
+              {{ country.name }}{% if not country.shipping_enabled %} (no delivery){% endif %}
+            </option>
+          {% endfor %}
+        </select>
+        <noscript><button class="btn btn-sm btn-outline-primary w-100 mt-2" type="submit">Set country</button></noscript>
+      </form>
+
+      <form method="post" action="{% url 'geo:set_currency' %}">
+        {% csrf_token %}
+        <input type="hidden" name="next" value="{{ request.get_full_path }}">
+        <label class="form-label small fw-semibold mb-1" for="locale-currency">Currency</label>
+        <select class="form-select form-select-sm" name="currency" id="locale-currency"
+                onchange="this.form.submit()">
+          {% for currency in AVAILABLE_CURRENCIES %}
+            <option value="{{ currency.code }}"
+                    {% if currency.pk == ACTIVE_CURRENCY.pk %}selected{% endif %}>
+              {{ currency.code }} &middot; {{ currency.symbol }} &middot; {{ currency.name }}
+            </option>
+          {% endfor %}
+        </select>
+        <noscript><button class="btn btn-sm btn-outline-primary w-100 mt-2" type="submit">Set currency</button></noscript>
+      </form>
+
+      {% if not LOCALE.is_base_currency %}
+        <p class="small text-body-secondary mt-3 mb-0">
+          Prices are converted from {{ BASE_CURRENCY.code }} and are indicative.
+          You are charged in {{ ACTIVE_CURRENCY.code }}.
+        </p>
+      {% endif %}
+    </div>
+  </div>
+{% endif %}

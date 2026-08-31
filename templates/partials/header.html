@@ -1,11 +1,12 @@
 {% load static %}
+{% load money %}
 <header class="site-header sticky-top">
 
   {# ---- announcement strip ---- #}
   <div class="announcement-bar text-center py-1 small">
     <div class="container-xxl">
       <i class="bi bi-truck"></i>
-      Free delivery on orders over {{ CURRENCY_SYMBOL }}{{ FREE_DELIVERY_THRESHOLD }}
+      Free delivery on orders over {% price FREE_DELIVERY_THRESHOLD %}
       <span class="d-none d-md-inline">&nbsp;&middot;&nbsp; {{ RETURN_WINDOW_DAYS }}-day easy returns</span>
     </div>
   </div>
@@ -81,6 +82,8 @@
             {% endif %}
           </ul>
         </div>
+
+        {% include "partials/locale_switcher.html" %}
 
         <button type="button" class="btn btn-link nav-icon-btn" data-theme-toggle
                 aria-label="Switch between light and dark theme" title="Toggle theme">

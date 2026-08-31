@@ -1161,3 +1161,9 @@ small, .small { font-size: var(--text-sm); }
   .site-header, .site-footer, .btn, .messages-stack { display: none !important; }
   body { background: #fff; }
 }
+
+/* ---- country & currency switcher ------------------------------------- */
+/* Wide enough for the longest country name without the menu reflowing as
+   the selection changes. */
+.locale-menu { min-width: 264px; }
+.locale-switcher .dropdown-toggle::after { margin-left: 0.25rem; }

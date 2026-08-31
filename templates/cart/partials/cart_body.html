@@ -1,3 +1,4 @@
+{% load money %}
 {% comment %}
 Cart contents + order summary. Swapped wholesale by HTMX after any quantity
 change so the totals shown are always the ones the server just computed.
@@ -45,9 +46,9 @@ change so the totals shown are always the ones the server just computed.
                 <p class="small text-body-secondary mb-1">{{ item.variant.label }}</p>
               {% endif %}
               <p class="small mb-2">
-                <span class="fw-semibold">{{ CURRENCY_SYMBOL }}{{ item.unit_price|floatformat:2 }}</span>
+                <span class="fw-semibold">{% price item.unit_price %}</span>
                 {% if item.line_savings %}
-                  <span class="price-was ms-1">{{ CURRENCY_SYMBOL }}{{ item.unit_mrp|floatformat:2 }}</span>
+                  <span class="price-was ms-1">{% price item.unit_mrp %}</span>
                 {% endif %}
                 <span class="text-body-secondary ms-1">each</span>
               </p>
@@ -91,9 +92,9 @@ change so the totals shown are always the ones the server just computed.
             </div>
 
             <div class="cart-line-total text-end">
-              <div class="fw-bold">{{ CURRENCY_SYMBOL }}{{ item.line_total|floatformat:2 }}</div>
+              <div class="fw-bold">{% price item.line_total %}</div>
               {% if item.line_savings %}
-                <div class="small text-success">Save {{ CURRENCY_SYMBOL }}{{ item.line_savings|floatformat:2 }}</div>
+                <div class="small text-success">Save {% price item.line_savings %}</div>
               {% endif %}
             </div>
           </div>

@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% load humanize %}
+{% load money %}
 
 {% block title %}My account &mdash; {{ SITE_NAME }}{% endblock %}
 
@@ -33,7 +34,7 @@
     <div class="col-6 col-lg-3">
       <div class="stat-card">
         <p class="stat-label">Total spent</p>
-        <p class="stat-value">{{ CURRENCY_SYMBOL }}{{ stats.lifetime_value|default:0|floatformat:2 }}</p>
+        <p class="stat-value">{% base_price stats.lifetime_value|default:0 %}</p>
       </div>
     </div>
   </div>
@@ -105,7 +106,7 @@
                   </div>
                 </div>
                 <div class="text-end">
-                  <div class="fw-bold">{{ CURRENCY_SYMBOL }}{{ order.total_amount|floatformat:2 }}</div>
+                  <div class="fw-bold">{{ order.total_amount|money_in:order.currency }}</div>
                   <span class="badge bg-{{ order.status_badge }}">{{ order.get_status_display }}</span>
                 </div>
               </div>
