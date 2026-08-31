@@ -17,6 +17,7 @@ urlpatterns = [
     path("api/", include("apps.api.urls")),
     # ---- Server-rendered storefront ----
     path("accounts/", include("apps.accounts.urls")),
+    path("locale/", include("apps.geo.urls")),
     path("products/", include("apps.catalog.urls")),
     path("cart/", include("apps.cart.urls")),
     path("wishlist/", include("apps.wishlist.urls")),
