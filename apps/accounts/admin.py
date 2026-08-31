@@ -6,6 +6,7 @@ from django.urls import reverse
 from django.utils.html import format_html
 from django.utils.translation import gettext_lazy as _
 
+from apps.audit.mixins import AuditedModelAdmin
 from apps.core.admin import ExportCsvMixin, badge, thumbnail
 
 from .forms import AddressForm
@@ -179,7 +180,7 @@ class UserAdmin(ExportCsvMixin, BaseUserAdmin):
 
 
 @admin.register(Address)
-class AddressAdmin(ExportCsvMixin, admin.ModelAdmin):
+class AddressAdmin(AuditedModelAdmin, ExportCsvMixin, admin.ModelAdmin):
     list_display = (
         "full_name",
         "user",

@@ -7,6 +7,7 @@ from django.urls import reverse
 from django.utils.html import format_html
 from django.utils.translation import gettext_lazy as _
 
+from apps.audit.mixins import AuditedModelAdmin
 from apps.core.admin import ExportCsvMixin, badge
 
 from . import services
@@ -49,7 +50,7 @@ class BulkRestockForm(forms.Form):
 
 
 @admin.register(Inventory)
-class InventoryAdmin(ExportCsvMixin, admin.ModelAdmin):
+class InventoryAdmin(AuditedModelAdmin, ExportCsvMixin, admin.ModelAdmin):
     """Stock control screen.
 
     Quantities are edited through actions rather than free-text fields so
@@ -197,7 +198,7 @@ class StockMovementAdmin(ExportCsvMixin, admin.ModelAdmin):
 
 
 @admin.register(Warehouse)
-class WarehouseAdmin(admin.ModelAdmin):
+class WarehouseAdmin(AuditedModelAdmin, admin.ModelAdmin):
     list_display = ("name", "code", "city", "country", "priority", "is_default", "is_active", "held_lines")
     list_filter = ("is_active", "is_default", "country")
     search_fields = ("name", "code", "city")

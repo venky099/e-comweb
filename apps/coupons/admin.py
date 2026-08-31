@@ -3,6 +3,7 @@ from django.contrib import admin
 from django.db.models import Sum
 from django.utils.translation import gettext_lazy as _
 
+from apps.audit.mixins import AuditedModelAdmin
 from apps.core.admin import ExportCsvMixin, badge
 
 from .models import Coupon, CouponUsage
@@ -51,7 +52,7 @@ class CouponStateFilter(admin.SimpleListFilter):
 
 
 @admin.register(Coupon)
-class CouponAdmin(ExportCsvMixin, admin.ModelAdmin):
+class CouponAdmin(AuditedModelAdmin, ExportCsvMixin, admin.ModelAdmin):
     inlines = [CouponUsageInline]
     list_display = (
         "code",

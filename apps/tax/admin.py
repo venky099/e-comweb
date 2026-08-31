@@ -1,11 +1,12 @@
 from django.contrib import admin
 from django.utils.translation import gettext_lazy as _
 
+from apps.audit.mixins import AuditedModelAdmin
 from apps.tax.models import OrderTaxLine, TaxRule
 
 
 @admin.register(TaxRule)
-class TaxRuleAdmin(admin.ModelAdmin):
+class TaxRuleAdmin(AuditedModelAdmin, admin.ModelAdmin):
     list_display = (
         "name",
         "percent",

@@ -4,6 +4,7 @@ from django.urls import reverse
 from django.utils.html import format_html, format_html_join
 from django.utils.translation import gettext_lazy as _
 
+from apps.audit.mixins import AuditedModelAdmin
 from apps.core.admin import ExportCsvMixin, badge
 from apps.payments.models import Payment
 
@@ -89,7 +90,7 @@ class PaymentInline(admin.TabularInline):
 
 
 @admin.register(Order)
-class OrderAdmin(ExportCsvMixin, admin.ModelAdmin):
+class OrderAdmin(AuditedModelAdmin, ExportCsvMixin, admin.ModelAdmin):
     """The order desk.
 
     Status changes go through ``services.transition_order`` (via the bulk

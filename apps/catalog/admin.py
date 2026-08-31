@@ -9,6 +9,7 @@ from django.urls import reverse
 from django.utils.html import format_html
 from django.utils.translation import gettext_lazy as _
 
+from apps.audit.mixins import AuditedModelAdmin
 from apps.core.admin import ExportCsvMixin, badge, thumbnail
 from apps.inventory.models import Inventory
 
@@ -75,7 +76,7 @@ class ProductVariantInline(admin.TabularInline):
 
 
 @admin.register(Category)
-class CategoryAdmin(ExportCsvMixin, admin.ModelAdmin):
+class CategoryAdmin(AuditedModelAdmin, ExportCsvMixin, admin.ModelAdmin):
     list_display = (
         "indented_name",
         "thumb",
@@ -137,7 +138,7 @@ class CategoryAdmin(ExportCsvMixin, admin.ModelAdmin):
 
 
 @admin.register(Brand)
-class BrandAdmin(ExportCsvMixin, admin.ModelAdmin):
+class BrandAdmin(AuditedModelAdmin, ExportCsvMixin, admin.ModelAdmin):
     list_display = ("logo_thumb", "name", "product_count", "is_active", "is_featured", "website")
     list_display_links = ("name",)
     list_editable = ("is_active", "is_featured")
@@ -160,7 +161,7 @@ class BrandAdmin(ExportCsvMixin, admin.ModelAdmin):
 
 
 @admin.register(Product)
-class ProductAdmin(ExportCsvMixin, admin.ModelAdmin):
+class ProductAdmin(AuditedModelAdmin, ExportCsvMixin, admin.ModelAdmin):
     """The main merchandising screen.
 
     ``list_editable`` on price/status/flags is deliberate: it turns the
@@ -322,7 +323,7 @@ class ProductAdmin(ExportCsvMixin, admin.ModelAdmin):
 
 
 @admin.register(ProductVariant)
-class ProductVariantAdmin(ExportCsvMixin, admin.ModelAdmin):
+class ProductVariantAdmin(AuditedModelAdmin, ExportCsvMixin, admin.ModelAdmin):
     """Variant-level view -- the fastest way to bulk-edit SKUs and stock."""
 
     inlines = [InventoryInline]

@@ -1,12 +1,13 @@
 from django.contrib import admin, messages
 from django.utils.translation import gettext_lazy as _
 
+from apps.audit.mixins import AuditedModelAdmin
 from apps.geo import services
 from apps.geo.models import Country, Currency, ExchangeRate, State
 
 
 @admin.register(Currency)
-class CurrencyAdmin(admin.ModelAdmin):
+class CurrencyAdmin(AuditedModelAdmin, admin.ModelAdmin):
     list_display = (
         "code",
         "name",
@@ -40,7 +41,7 @@ class StateInline(admin.TabularInline):
 
 
 @admin.register(Country)
-class CountryAdmin(admin.ModelAdmin):
+class CountryAdmin(AuditedModelAdmin, admin.ModelAdmin):
     list_display = (
         "name",
         "iso2",

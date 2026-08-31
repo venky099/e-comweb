@@ -1,6 +1,7 @@
 from django.contrib import admin
 from django.utils.translation import gettext_lazy as _
 
+from apps.audit.mixins import AuditedModelAdmin
 from apps.shipping.models import (
     Shipment,
     ShipmentItem,
@@ -28,7 +29,7 @@ class ShippingRateInline(admin.TabularInline):
 
 
 @admin.register(ShippingZone)
-class ShippingZoneAdmin(admin.ModelAdmin):
+class ShippingZoneAdmin(AuditedModelAdmin, admin.ModelAdmin):
     list_display = ("name", "country_list", "rate_count", "is_active", "sort_order")
     list_filter = ("is_active",)
     search_fields = ("name", "countries__name")
@@ -48,7 +49,7 @@ class ShippingZoneAdmin(admin.ModelAdmin):
 
 
 @admin.register(ShippingMethod)
-class ShippingMethodAdmin(admin.ModelAdmin):
+class ShippingMethodAdmin(AuditedModelAdmin, admin.ModelAdmin):
     list_display = ("name", "code", "carrier", "estimate", "is_active", "sort_order")
     list_filter = ("is_active",)
     search_fields = ("name", "code", "carrier")
@@ -57,7 +58,7 @@ class ShippingMethodAdmin(admin.ModelAdmin):
 
 
 @admin.register(ShippingRate)
-class ShippingRateAdmin(admin.ModelAdmin):
+class ShippingRateAdmin(AuditedModelAdmin, admin.ModelAdmin):
     list_display = (
         "zone",
         "method",
