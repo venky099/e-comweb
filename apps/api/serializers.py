@@ -685,6 +685,15 @@ class CreateOrderSerializer(serializers.Serializer):
     address_id = serializers.IntegerField()
     payment_method = serializers.ChoiceField(choices=Order.PaymentMethod.choices)
     customer_note = serializers.CharField(required=False, allow_blank=True, max_length=500)
+    shipping_method = serializers.CharField(
+        required=False,
+        allow_blank=True,
+        max_length=32,
+        help_text="Delivery method code. Omitted means the cheapest available.",
+    )
+
+    def validate_shipping_method(self, value):
+        return value or None
 
     def validate_address_id(self, value):
         user = self.context["request"].user

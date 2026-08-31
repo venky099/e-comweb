@@ -611,6 +611,8 @@ class OrderViewSet(viewsets.ReadOnlyModelViewSet):
                 address=serializer.address,
                 payment_method=serializer.validated_data["payment_method"],
                 customer_note=serializer.validated_data.get("customer_note", ""),
+                currency=getattr(getattr(request, "locale", None), "currency", None),
+                shipping_method_code=serializer.validated_data.get("shipping_method"),
             )
         except order_services.OrderError as exc:
             return Response({"detail": str(exc)}, status=status.HTTP_400_BAD_REQUEST)

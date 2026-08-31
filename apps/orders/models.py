@@ -140,7 +140,55 @@ class Order(TimeStampedModel):
         db_index=True,
     )
     refunded_amount = models.DecimalField(max_digits=12, decimal_places=2, default=ZERO)
-    currency = models.CharField(max_length=8, default="INR")
+    # ---- currency (MST spec section 60) ---------------------------------
+    # The figures above are in the base currency, which is what the catalogue
+    # is priced in. The ones below are what the customer was actually charged,
+    # frozen with the rate used. Storing both is the whole point: "this
+    # prevents future exchange-rate changes from changing historical
+    # invoices". Nothing ever re-derives these from today's rate.
+    currency = models.CharField(
+        max_length=8, default="INR", help_text=_("What the customer was charged in.")
+    )
+    base_currency = models.CharField(
+        max_length=8, default="INR", help_text=_("What the amounts above are in.")
+    )
+    exchange_rate = models.DecimalField(
+        max_digits=18,
+        decimal_places=8,
+        default=Decimal("1"),
+        help_text=_("Units of the charged currency per unit of the base currency."),
+    )
+    charged_subtotal = models.DecimalField(max_digits=12, decimal_places=2, default=ZERO)
+    charged_discount = models.DecimalField(max_digits=12, decimal_places=2, default=ZERO)
+    charged_delivery_charge = models.DecimalField(
+        max_digits=12, decimal_places=2, default=ZERO
+    )
+    charged_tax_amount = models.DecimalField(
+        max_digits=12, decimal_places=2, default=ZERO
+    )
+    charged_total = models.DecimalField(max_digits=12, decimal_places=2, default=ZERO)
+
+    # ---- delivery -------------------------------------------------------
+    destination_country = models.ForeignKey(
+        "geo.Country",
+        on_delete=models.SET_NULL,
+        blank=True,
+        null=True,
+        related_name="orders",
+        help_text=_("Resolved from the shipping address, for tax and reporting."),
+    )
+    shipping_method = models.ForeignKey(
+        "shipping.ShippingMethod",
+        on_delete=models.SET_NULL,
+        blank=True,
+        null=True,
+        related_name="orders",
+    )
+    shipping_method_name = models.CharField(
+        max_length=64,
+        blank=True,
+        help_text=_("Copied at checkout, so renaming a method later cannot rewrite it."),
+    )
 
     #: True once the reservation taken at placement has been converted into a
     #: sale. It decides whether closing the order *releases* a reservation or

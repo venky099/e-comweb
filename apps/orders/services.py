@@ -24,8 +24,11 @@ from django.utils.translation import gettext_lazy as _
 
 from apps.catalog.models import Product
 from apps.coupons import services as coupon_services
+from apps.geo import services as geo_services
 from apps.inventory import services as inventory_services
 from apps.inventory.models import StockMovement
+from apps.shipping import services as shipping_services
+from apps.tax import services as tax_services
 
 from .models import Order, OrderItem, OrderStatusHistory, ReturnRequest
 
@@ -42,11 +45,50 @@ class OrderError(Exception):
     """Raised when an order operation is not allowed."""
 
 
+def destination_for(snapshot):
+    """Resolve a shipping address into the country and state tax needs.
+
+    Addresses store text, not foreign keys, because an address must keep
+    reading correctly after a country is renamed or deactivated. Tax and
+    shipping need the real rows, so they are looked up here -- and a miss
+    returns None rather than a guess, which makes the order untaxed instead
+    of wrongly taxed.
+    """
+    from apps.geo.models import Country, State
+
+    name = (snapshot.get("country") or "").strip()
+    if not name:
+        return None, None
+    country = Country.objects.filter(name__iexact=name).first()
+    if country is None and len(name) in (2, 3):
+        country = Country.objects.filter(iso2__iexact=name).first()
+    if country is None:
+        return None, None
+
+    state_name = (snapshot.get("state") or "").strip()
+    state = (
+        State.objects.filter(country=country, name__iexact=state_name).first()
+        if state_name
+        else None
+    )
+    return country, state
+
+
+
+
 # ---------------------------------------------------------------------------
 # Placement
 # ---------------------------------------------------------------------------
 @transaction.atomic
-def place_order(user, cart, address, payment_method, customer_note=""):
+def place_order(
+    user,
+    cart,
+    address,
+    payment_method,
+    customer_note="",
+    currency=None,
+    shipping_method_code=None,
+):
     """Turn a cart into an order.
 
     Runs entirely inside one transaction with inventory rows locked, so two
@@ -96,17 +138,74 @@ def place_order(user, cart, address, payment_method, customer_note=""):
 
     discounted = money(max(subtotal - coupon_discount, ZERO))
 
-    delivery_charge = ZERO
-    if not free_shipping and discounted < Decimal(settings.FREE_DELIVERY_THRESHOLD):
-        delivery_charge = money(Decimal(settings.DELIVERY_CHARGE))
+    # ---- 4. Where it is going ------------------------------------------
+    snapshot = address.as_snapshot()
+    country, state = destination_for(snapshot)
+    if country is not None and not country.shipping_enabled:
+        raise OrderError(
+            _("We do not currently deliver to %(country)s.") % {"country": country.name}
+        )
 
-    tax_rate = Decimal(settings.TAX_RATE_PERCENT)
-    tax_amount = money(discounted * tax_rate / Decimal("100")) if tax_rate > ZERO else ZERO
+    # ---- 5. Delivery ----------------------------------------------------
+    # Quoted, not assumed: the customer picked a method and a price was shown
+    # with it, so the same quote is recomputed here and the chosen option
+    # must still be on offer.
+    options = shipping_services.quote(items, country, discounted)
+    chosen = None
+    if free_shipping:
+        # A free-shipping coupon still needs a method, just not a charge.
+        chosen = (
+            shipping_services.option_by_code(options, shipping_method_code)
+            or shipping_services.default_option(options)
+        )
+        delivery_charge = ZERO
+    elif options:
+        chosen = shipping_services.option_by_code(options, shipping_method_code)
+        if chosen is None and shipping_method_code:
+            raise OrderError(
+                _("That delivery option is no longer available. Please choose again.")
+            )
+        chosen = chosen or shipping_services.default_option(options)
+        delivery_charge = money(chosen.price)
+    elif shipping_services.has_any_rates() and country is not None:
+        raise OrderError(
+            _("We could not find a delivery option for %(country)s.")
+            % {"country": country.name}
+        )
+    else:
+        # No rate table configured -- behave exactly as the single-country
+        # shop did before shipping zones existed.
+        delivery_charge = money(shipping_services.legacy_flat_charge(discounted))
+
+    # ---- 6. Tax ---------------------------------------------------------
+    tax_result = tax_services.compute(items, country, state)
+    tax_amount = money(tax_result.total)
+    if tax_amount == ZERO and country is None:
+        # Nowhere to look tax up: fall back to the flat legacy rate so an
+        # unrecognised country is not silently sold to untaxed.
+        legacy_rate = Decimal(settings.TAX_RATE_PERCENT)
+        if legacy_rate > ZERO:
+            tax_amount = money(discounted * legacy_rate / Decimal("100"))
 
     total = money(discounted + delivery_charge + tax_amount)
 
-    # ---- 4. Create the order -------------------------------------------
-    snapshot = address.as_snapshot()
+    # ---- 7. Freeze the exchange rate (spec section 60) ------------------
+    base = geo_services.base_currency(required=False)
+    charged = currency or base
+    if charged is not None and base is not None and charged.pk != base.pk:
+        rate = geo_services.rate_for(charged)
+    else:
+        rate = Decimal("1")
+
+    def charged_amount(amount):
+        """Convert once, at the frozen rate, in the charged currency."""
+        if charged is None:
+            return money(amount)
+        return geo_services.convert(amount, charged, rate=rate)
+
+    charged_total = charged_amount(total)
+
+    # ---- 8. Create the order -------------------------------------------
     order = Order.objects.create(
         user=user,
         email=user.email,
@@ -122,7 +221,17 @@ def place_order(user, cart, address, payment_method, customer_note=""):
         delivery_charge=delivery_charge,
         tax_amount=tax_amount,
         total_amount=total,
-        currency=settings.DEFAULT_CURRENCY,
+        currency=charged.code if charged else settings.DEFAULT_CURRENCY,
+        base_currency=base.code if base else settings.DEFAULT_CURRENCY,
+        exchange_rate=rate,
+        charged_subtotal=charged_amount(subtotal),
+        charged_discount=charged_amount(product_discount + coupon_discount),
+        charged_delivery_charge=charged_amount(delivery_charge),
+        charged_tax_amount=charged_amount(tax_amount),
+        charged_total=charged_total,
+        destination_country=country,
+        shipping_method=chosen.method if chosen else None,
+        shipping_method_name=chosen.name if chosen else "",
         customer_note=customer_note or "",
         shipping_full_name=snapshot["full_name"],
         shipping_phone=snapshot["phone"],
@@ -133,10 +242,15 @@ def place_order(user, cart, address, payment_method, customer_note=""):
         shipping_state=snapshot["state"],
         shipping_country=snapshot["country"],
         shipping_postal_code=snapshot["postal_code"],
-        estimated_delivery=timezone.localdate() + timedelta(days=5),
+        estimated_delivery=timezone.localdate()
+        + timedelta(days=chosen.method.max_days if chosen else 5),
     )
 
-    # ---- 5. Snapshot the lines and reserve stock -----------------------
+    # The tax breakdown is stored, not recomputed: rules and rates change,
+    # and an invoice must still show what was charged on the day.
+    tax_services.save_lines(order, tax_result)
+
+    # ---- 9. Snapshot the lines and reserve stock -----------------------
     for item in items:
         variant = item.variant
         product = variant.product
@@ -164,11 +278,11 @@ def place_order(user, cart, address, payment_method, customer_note=""):
             variant, item.quantity, reference=order.order_number, user=user
         )
 
-    # ---- 6. Burn the coupon --------------------------------------------
+    # ---- 10. Burn the coupon -------------------------------------------
     if coupon is not None:
         coupon_services.redeem(coupon, user, order, coupon_discount)
 
-    # ---- 7. Empty the cart ---------------------------------------------
+    # ---- 11. Empty the cart --------------------------------------------
     cart.clear()
 
     logger.info("Order %s placed by user %s for %s", order.order_number, user.pk, total)

@@ -200,6 +200,10 @@ class CheckoutPaymentView(CheckoutStepMixin, View):
                 address=address,
                 payment_method=form.cleaned_data["payment_method"],
                 customer_note=form.cleaned_data.get("customer_note", ""),
+                # The order is charged in the currency the prices were shown
+                # in, and the rate is frozen onto it.
+                currency=getattr(getattr(request, "locale", None), "currency", None),
+                shipping_method_code=request.POST.get("shipping_method") or None,
             )
         except services.OrderError as exc:
             messages.error(request, str(exc))
